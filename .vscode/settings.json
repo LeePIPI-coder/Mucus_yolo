@@ -1,0 +1,19 @@
+{
+    // 1. 核心性能优化：禁止监控文件变动（解决 CPU 100%）
+    "files.watcherExclude": {
+        "dataset/**": true,
+        "dataset_280/**": true,
+        "data/**": true,
+        "weights/**": true,
+        "Mucus/**": true,
+        "Train_result/**":true
+    },
+    // 2. 实用优化：全局搜索（Ctrl+Shift+F）时跳过这些大目录
+    "search.exclude": {
+        "dataset/": true,
+        "dataset_280/": true,
+        "data/": true,
+        "Mucus/": true
+    }
+    // 注意：这里没有添加 files.exclude，所以文件夹在左侧依然可见
+}

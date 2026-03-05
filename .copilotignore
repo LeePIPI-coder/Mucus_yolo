@@ -1,0 +1,12 @@
+# 忽略的目录
+source/results/
+Output_display/
+source/results
+Train_result/
+exp10-new/
+
+# 忽略模型权重文件
+weights/
+Mucus/
+__pycache__/
+*.pyc

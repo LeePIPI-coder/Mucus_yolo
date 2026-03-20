@@ -1,8 +1,8 @@
 from os import path
 
 # from simAPSMaskUpload.logger import logger
-from simAPSMaskUpload.StorageReader.StorageReaderBase import StorageReaderBase
-from simAPSMaskUpload.StorageReader.SqlcipherStorageReader import SqlcipherStorageReader
+from .StorageReaderBase import StorageReaderBase
+from .SqlcipherStorageReader import SqlcipherStorageReader
 
 __all__ = [
     "check_storage_valid",

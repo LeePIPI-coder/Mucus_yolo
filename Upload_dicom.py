@@ -17,15 +17,15 @@ from pathlib import Path
 from xml.etree.ElementTree import Element, SubElement, tostring
 # import lz4.frame
 from typing import Sequence
-from simAPSMaskUpload.StorageReader.SeriesList import Position, SeriesItem
-from simAPSMaskUpload.ConsoleApp.UploadMask import __generate_init_mask_json, __generate_lesion_file_and_append_lesion, __generate_annot_json_if_not_existed
+from utils.simAPSMaskUpload.StorageReader.SeriesList import Position, SeriesItem
+from utils.simAPSMaskUpload.ConsoleApp.UploadMask import __generate_init_mask_json, __generate_lesion_file_and_append_lesion, __generate_annot_json_if_not_existed
 from openpyxl import Workbook, load_workbook
 from pathlib import Path
-from Code.SqlcipherStorageReader import SqlcipherStorageReader
+from utils.SQL.SqlcipherStorageReader import SqlcipherStorageReader
 from datetime import datetime
 import zipfile
 # import lz4.frame
-from Code.logging import get_logger
+from utils.logging import get_logger
 from ultralytics import YOLO
 import pydicom
 
@@ -320,7 +320,7 @@ def merge_3d_boxes(detect_boxes):
 
 def Seg_Upload(input_path: str, start_time: str, model_path: str, annotation: str, weather_jumpy: bool):
     
-    logger = get_logger(input_path)
+    logger = get_logger('./logs')
     sql = SqlcipherStorageReader(input_path)
     logger.info("正在提取要检测的文件目录。。。")
     all_patient_list = sql.get_all_series_list()

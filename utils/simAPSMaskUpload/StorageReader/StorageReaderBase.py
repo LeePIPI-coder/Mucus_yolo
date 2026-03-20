@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from os import path
 
-from simAPSMaskUpload.StorageReader.SeriesList import SeriesList
+from .SeriesList import SeriesList
 
 __all__ = ["StorageReaderBase"]
 

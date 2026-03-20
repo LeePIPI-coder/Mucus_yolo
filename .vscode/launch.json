@@ -22,7 +22,7 @@
             "name": "dicom_predict.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "dicom_predict.py",
+            "program": "utils/Display/dicom_predict.py",
             "console": "integratedTerminal"
         },
         {
@@ -43,14 +43,7 @@
             "name": "display_label.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "display_label.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "test_260206.py",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "test_260206.py",
+            "program": "utils/Display/display_label.py",
             "console": "integratedTerminal"
         },
         {
@@ -64,28 +57,28 @@
             "name": "count_images.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "data_code/count_images.py",
+            "program": "utils/data_code/count_images.py",
             "console": "integratedTerminal"
         },
         {
             "name": "make_kfold_yolo.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "data_code/make_kfold_yolo.py",
+            "program": "utils/data_code/make_kfold_yolo.py",
             "console": "integratedTerminal"
         },
         {
             "name": "make_patch_dataset.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "data_code/make_patch_dataset.py",
+            "program": "utils/data_code/make_patch_dataset.py",
             "console": "integratedTerminal"
         },
         {
             "name": "make_txt.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "data_code/make_txt.py",
+            "program": "utils/data_code/make_txt.py",
             "console": "integratedTerminal"
         }
     ]

@@ -1,16 +1,15 @@
 from os import path
-from sqlite3 import connect, Connection
+from sqlcipher3 import connect, Connection
 from re import match
 
-from simAPSMaskUpload.settings import (
+from ..simAPSMaskUpload.settings import (
     AVIEW_SQLITE_KEY,
     AVIEW_SQLITE_CIPHER,
     AVIEW_SQLITE_KDF_ITER,
     AVIEW_SQLITE_CIPHER_PAGE_SIZE,
 )
-# from simAPSMaskUpload.logger import logger
-from simAPSMaskUpload.StorageReader.StorageReaderBase import StorageReaderBase
-from simAPSMaskUpload.StorageReader.SeriesList import SeriesItem, SeriesList, Position
+from ..simAPSMaskUpload.StorageReader.StorageReaderBase import StorageReaderBase
+from ..simAPSMaskUpload.StorageReader.SeriesList import SeriesItem, SeriesList, Position
 
 
 __all__ = ["SqlcipherStorageReader"]
@@ -52,10 +51,11 @@ class SqlcipherStorageReader(StorageReaderBase):
             list[tuple[int, str, str]]: 患者信息列表 (patient_db_id, patient_id, patient_name)
         """
         cur = self.__conn.cursor()
+
         patient_list: list[tuple[int, str, str]] = []
-        cur.execute("SELECT id, patient_id, patient_name FROM patient;")
-        for patient_db_id, patient_id, patient_name in cur.fetchall():
-            patient_list.append((patient_db_id, patient_id, patient_name))
+        cur.execute("SELECT id, patient_id, patient_name, updated_at FROM patient;")
+        for patient_db_id, patient_id, patient_name, updated_at in cur.fetchall():
+            patient_list.append((patient_db_id, patient_id, patient_name, updated_at))
         return patient_list
 
     def __get_studies_by_patient_db_id(
@@ -199,10 +199,10 @@ class SqlcipherStorageReader(StorageReaderBase):
         ) = first_result
         position_init = self.__get_position_from_DB_str(first_position_str)
         if position_init == None:
-            logger.error(
-                "通过序列数据库ID %d 获取到的切片数据库ID %d 的患者坐标信息 %s 无效"
-                % (series_db_id, first_instance_db_id, first_position_str)
-            )
+            # logger.error(
+            #     "通过序列数据库ID %d 获取到的切片数据库ID %d 的患者坐标信息 %s 无效"
+            #     % (series_db_id, first_instance_db_id, first_position_str)
+            # )
             return None
         position_min = Position(position_init.X, position_init.Y, position_init.Z)
         pixel_spacing_tuple = self.__get_pixel_spacing(first_pixel_spacing_str)
@@ -286,6 +286,7 @@ class SqlcipherStorageReader(StorageReaderBase):
         study_id: str,
         accession_number: str,
         study_instance_uid: str,
+        updated_at,
     ) -> None:
         """通过检查数据库ID添加序列信息
 
@@ -299,13 +300,7 @@ class SqlcipherStorageReader(StorageReaderBase):
             study_instance_uid (str): IN 检查UID
         """
         # 获取检查对应的序列信息
-        for (
-            series_db_id,
-            series_number,
-            series_instance_uid,
-            workspace_path,
-            sop_instance_count,
-        ) in self.__get_series_by_study_db_id(study_db_id):
+        for (series_db_id,series_number,series_instance_uid,workspace_path,sop_instance_count,) in self.__get_series_by_study_db_id(study_db_id):
             instance_info = self.__get_instance_by_series_db_id(series_db_id)
             if instance_info == None:
                 continue
@@ -321,11 +316,12 @@ class SqlcipherStorageReader(StorageReaderBase):
                     series_number,
                     series_instance_uid,
                     self._storage_dir + "/" + workspace_path,
-                    patient_pos_max,
-                    patient_pos_min,
+                    # patient_pos_max,
+                    # patient_pos_min,
                     rows,
                     cols,
                     sop_instance_count,
+                    updated_at
                 )
             )
 
@@ -338,18 +334,9 @@ class SqlcipherStorageReader(StorageReaderBase):
         series_info_list: SeriesList = []
 
         # 获取所有患者信息
-        for (
-            patient_db_id,
-            patient_id,
-            patient_name,
-        ) in self.__get_all_patient():
+        for (patient_db_id, patient_id, patient_name, updated_at) in self.__get_all_patient():
             # 获取患者对应的检查信息
-            for (
-                study_db_id,
-                study_id,
-                accession_number,
-                study_instance_uid,
-            ) in self.__get_studies_by_patient_db_id(patient_db_id):
+            for (study_db_id, study_id, accession_number, study_instance_uid,) in self.__get_studies_by_patient_db_id(patient_db_id):
                 # 获取检查对应的序列信息
                 self.__append_series_by_study_db_id(
                     series_info_list,
@@ -359,6 +346,7 @@ class SqlcipherStorageReader(StorageReaderBase):
                     study_id,
                     accession_number,
                     study_instance_uid,
+                    updated_at
                 )
         return series_info_list
 
@@ -421,6 +409,7 @@ class SqlcipherStorageReader(StorageReaderBase):
                     study_id,
                     accession_number,
                     study_instance_uid,
+                    updated_at
                 )
         return series_info_list
 
@@ -1107,3 +1096,247 @@ class SqlcipherStorageReader(StorageReaderBase):
         if res == None:
             return None
         return res
+
+    def get_series_list_by_patient_id(self, patient_ids: list[str]) -> SeriesList:
+        """通过 patient id 列表获取序列信息
+
+        Args:
+            patient_ids (str): patient id 列表
+
+        Returns:
+            SeriesList: 序列信息列表对象
+        """
+        assert patient_ids.__len__() != 0
+        series_info_list: SeriesList = []
+
+        # 获取相应的患者信息
+        for (
+            patient_db_id,
+            patient_id,
+            patient_name,
+        ) in self.__get_patients_by_patient_id(patient_ids):
+            # 获取患者对应的检查信息
+            for (
+                study_db_id,
+                study_id,
+                accession_number,
+                study_instance_uid,
+            ) in self.__get_studies_by_patient_db_id(patient_db_id):
+                # 获取检查对应的序列信息
+                self.__append_series_by_study_db_id(
+                    series_info_list,
+                    study_db_id,
+                    patient_id,
+                    patient_name,
+                    study_id,
+                    accession_number,
+                    study_instance_uid,
+                    updated_at
+                )
+        return series_info_list
+
+    def __get_all_patients_by_patient_id(
+            self, patient_ids: list[str]
+        ) -> list[tuple[int, str, str]]:
+            """根据患者ID列表获取相应患者信息
+
+            Args:
+                patient_ids (list[str]): 患者ID列表
+
+            Returns:
+                list[tuple[int, str, str]]: 患者信息 (patient_db_id, patient_id, patient_name)
+            """
+            cur = self.__conn.cursor()
+            # patient = {}
+            # for patient_id in patient_ids:
+            #     # fmt: off
+            #     cur.execute(
+            #         f"SELECT id, patient_name, patient_sex, "
+            #         "patient_birth_date, study_count, series_count, sop_instance_count," 
+            #         "imported_at, legacy_site_key, created_at, updated_at FROM patient "
+            #         "WHERE patient_id = ?;",
+            #         (patient_id,),
+            #     )
+            #     # fmt on
+            #     patient['patient'] = {}
+            #     for (ids, patient_name, patient_sex, patient_birth_date, study_count, series_count,
+            #     sop_instance_count, imported_at, legacy_site_key, created_at, updated_at) in cur.fetchall():
+            #         patient['patient']["ids"] = ids
+            #         patient['patient']["patient_name"] = patient_name
+            #         patient['patient']["patient_sex"] = patient_sex
+            #         patient['patient']["patient_birth_date"] = patient_birth_date
+            #         patient['patient']["study_count"] = study_count
+            #         patient['patient']["series_count"] = series_count
+            #         patient['patient']["sop_instance_count"] = sop_instance_count
+            #         patient['patient']["imported_at"] = imported_at
+            #         patient['patient']["legacy_site_key"] = legacy_site_key
+            #         patient['patient']["created_at"] = created_at
+            #         patient['patient']["updated_at"] = updated_at
+
+            cur.execute("SELECT * FROM schema_version;")
+            rows = cur.fetchall()
+            print("---------------1schema_version---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM sqlite_sequence;")
+            rows = cur.fetchall()
+            print("---------------2sqlite_sequence---------------")
+            for row in rows:
+                print(row)
+                
+            cur.execute("SELECT * FROM custom_column;")
+            rows = cur.fetchall()
+            print("---------------3custom_column---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM config;")
+            rows = cur.fetchall()
+            print("---------------4config---------------")
+            for row in rows:
+                print(row)
+        
+            cur.execute("SELECT * FROM deanonymizing_series;")
+            rows = cur.fetchall()
+            print("---------------5deanonymizing_series---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM deanonymizing_study;")
+            rows = cur.fetchall()
+            print("---------------6deanonymizing_study---------------")
+            for row in rows:
+                print(row)
+
+            cur.execute("SELECT * FROM key_image;")
+            rows = cur.fetchall()
+            print("---------------7key_image---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM patient;")
+            rows = cur.fetchall()
+            print("---------------8patient---------------")
+            for row in rows:
+                print(row)
+
+            cur.execute("SELECT * FROM patient_org;")
+            rows = cur.fetchall()
+            print("---------------9patient_org---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM series;")
+            rows = cur.fetchall()
+            print("---------------10series---------------")
+            for row in rows:
+                print(row)
+
+            cur.execute("SELECT * FROM series_folder;")
+            rows = cur.fetchall()
+            print("---------------11series_folder---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM series_tag;")
+            rows = cur.fetchall()
+            print("---------------12series_tag---------------")
+            for row in rows:
+                print(row)
+        
+            cur.execute("SELECT * FROM series_to_series_tag;")
+            rows = cur.fetchall()
+            print("---------------13series_to_series_tag---------------")
+            for row in rows:
+                print(row)
+            
+            # cur.execute("SELECT * FROM sop_instance;")
+            # rows = cur.fetchall()
+            # print("---------------14sop_instance---------------")
+            # for row in rows:
+            #     print(row)
+
+            cur.execute("SELECT * FROM study;")
+            rows = cur.fetchall()
+            print("---------------15study---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM study_comment;")
+            rows = cur.fetchall()
+            print("---------------16study_comment ---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM study_folder;")
+            rows = cur.fetchall()
+            print("---------------17study_folder---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM study_lock;")
+            rows = cur.fetchall()
+            print("---------------18study_lock---------------")
+            for row in rows:
+                print(row)
+
+            cur.execute("SELECT * FROM study_report;")
+            rows = cur.fetchall()
+            print("---------------19study_report---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM study_result;")
+            rows = cur.fetchall()
+            print("---------------20study_result---------------")
+            for row in rows:
+                print(row)
+
+            cur.execute("SELECT * FROM study_status;")
+            rows = cur.fetchall()
+            print("---------------21study_status---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM study_status_history;")
+            rows = cur.fetchall()
+            print("---------------22study_status_history---------------")
+            for row in rows:
+                print(row)
+        
+            cur.execute("SELECT * FROM study_tag;")
+            rows = cur.fetchall()
+            print("---------------23study_tag---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM study_to_study_tag ;")
+            rows = cur.fetchall()
+            print("---------------24study_to_study_tag ---------------")
+            for row in rows:
+                print(row)
+
+            cur.execute("SELECT * FROM task;")
+            rows = cur.fetchall()
+            print("---------------25task---------------")
+            for row in rows:
+                print(row)
+            
+            cur.execute("SELECT * FROM volume_disk;")
+            rows = cur.fetchall()
+            print("---------------26volume_disk ---------------")
+            for row in rows:
+                print(row)
+
+
+    def get_all_table_name(self):
+        cur = self.__conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        table = cur.fetchall()
+        for i in table:
+            print(i[0] + "\n")
+
+        cur.execute("PRAGMA table_info('patient')")
+        columns = cur.fetchall()
+        print(columns)

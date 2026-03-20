@@ -17,15 +17,15 @@ from pathlib import Path
 from xml.etree.ElementTree import Element, SubElement, tostring
 # import lz4.frame
 from typing import Sequence
-from simAPSMaskUpload.StorageReader.SeriesList import Position, SeriesItem
-from simAPSMaskUpload.ConsoleApp.UploadMask import __generate_init_mask_json, __generate_lesion_file_and_append_lesion, __generate_annot_json_if_not_existed
+from utils.simAPSMaskUpload.StorageReader.SeriesList import Position, SeriesItem
+from utils.simAPSMaskUpload.ConsoleApp.UploadMask import __generate_init_mask_json, __generate_lesion_file_and_append_lesion, __generate_annot_json_if_not_existed
 from openpyxl import Workbook, load_workbook
 from pathlib import Path
-from Code.SqlcipherStorageReader import SqlcipherStorageReader
+from utils.SQL.SqlcipherStorageReader import SqlcipherStorageReader
 from datetime import datetime
 import zipfile
 # import lz4.frame
-from Code.logging import get_logger
+from utils.logging import get_logger
 from ultralytics import YOLO
 import pydicom
 

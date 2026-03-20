@@ -1,6 +1,6 @@
 from typing import TypeAlias
 
-from simAPSMaskUpload.StorageReader.SeriesList import SeriesItem
+from ..StorageReader.SeriesList import SeriesItem
 
 __all__ = ["UploadResult", "UploadResults"]
 

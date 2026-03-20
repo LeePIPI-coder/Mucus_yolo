@@ -2,11 +2,11 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from logging import DEBUG
 from os import path
 
-from simAPSMaskUpload import settings
-from simAPSMaskUpload.logger import logger
-from simAPSMaskUpload.StorageReader import check_storage_valid, get_storage_obj
-from simAPSMaskUpload.StorageReader.SeriesList import SeriesList
-from simAPSMaskUpload.ConsoleApp.UploadMask import (
+from .. import settings
+from ..logger import logger
+from ..StorageReader import check_storage_valid, get_storage_obj
+from ..StorageReader.SeriesList import SeriesList
+from .UploadMask import (
     upload_research_masks,
     upload_empty_masks,
     calling_aps_task,

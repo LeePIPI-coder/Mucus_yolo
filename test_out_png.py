@@ -4,13 +4,16 @@ import cv2
 import random
 
 
-if __name__ == "__main__":
-    # 需要设置的参数
-    # 要display的标签路径
-    label_dir = r"/home/LJR/Mucus_project/demo_mucusAlgorithms/dataset/yolo_dataset/test/labels"
-    # 保存的目录
-    save_dir = '20260302_neg_0_Ktest' 
-    
+def display_test_out_png(model_weight:str, label_dir:str, save_dir:str):
+    """
+    function:保存在测试集上的检测结果可视化图片以及其对应的标签图片用于对比实验
+
+    Args:
+        model_weight (str): 模型权重路径
+        label_dir (str): 标签目录路径
+        save_dir (str): 保存目录路径
+
+    """
     label_lists = os.listdir(label_dir)
     # 选取的文件序列号
     pre_range = slice(0,100)
@@ -27,7 +30,7 @@ if __name__ == "__main__":
     os.makedirs(f"/home/LJR/Mucus_project/demo_mucusAlgorithms/Output_display/{save_dir}", exist_ok=True)
     
     # Load a model
-    model = YOLO("/home/LJR/Mucus_project/demo_mucusAlgorithms/Mucus_neg_0/Train_20260227_fold2/weights/best.pt")  # pretrained YOLO26n model
+    model = YOLO(model_weight)  # pretrained YOLO26n model
     # Run batched inference on a list of images
     results = model(image_paths[pre_range], device=0, conf=0.1)  # return a list of Results objects
     label_detect_list = label_paths
@@ -79,3 +82,9 @@ if __name__ == "__main__":
         cv2.imwrite(save_path, combined_img)
     print(f"共检出{num}张")
         # print(f"Saved combined image to: {save_path}")
+
+if __name__ == "__main__":
+    model_weight = r"/home/LJR/Mucus_project/demo_mucusAlgorithms/Mucus_neg_0/Train_20260227_fold2/weights/best.pt"
+    label_dir = r"/home/LJR/Mucus_project/demo_mucusAlgorithms/dataset/yolo_dataset/test/labels"
+    save_dir = '20260302_neg_0_Ktest' 
+    display_test_out_png(model_weight, label_dir, save_dir)

@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Upload_dicom.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "Upload_dicom.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Upload_Pre.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "Upload_Pre.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "dicom_predict.py",
             "type": "debugpy",
             "request": "launch",

@@ -1,0 +1,35 @@
+{
+  "formatVersion" : 5,
+  "study" : 
+  [
+    {
+      "series" : 
+      [
+        {
+          "lesion" : 
+          [
+            {
+              "hasPixelMask" : true,
+              "lesionType" : "ELesionAnnotType_ROI_3D",
+              "maskFileNameSegmask" : "lesionAnnot3D-000.512x512x343.psegmaskz",
+              "roi_patientPos_max" : "(79.1777, -114.143, 735)",
+              "roi_patientPos_min" : "(14.1309, -175.654, 671)",
+              "userAnnotComment" : 
+              {
+                "__valid" : true,
+                "annotation" : "11111111111",
+                "double_check_type" : "",
+                "final_check_type" : "",
+                "nodule_type" : "",
+                "userComment_formname" : "Suhai_Nodule_Review",
+                "userComment_version" : "8ade9d09-4149-4574-a2fa-aaadb65c104f"
+              }
+            }
+          ],
+          "seriesInstanceUid" : "1.3.6.1.4.1.43276.1.3.20201103.1153523.1817.13608.11642"
+        }
+      ],
+      "studyInstanceUid" : "1.3.6.1.4.1.43276.1.2.20201103.1153523.1817.14253.11641"
+    }
+  ]
+}

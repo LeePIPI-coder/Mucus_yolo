@@ -6,6 +6,12 @@ Train_result/
 exp10-new/
 Predict/
 docker/
+.dotnet/
+.vscode-server/
+.gnupg/
+froc_results/
+froc_results-3D/
+
 
 # 忽略模型权重文件
 Mucus/

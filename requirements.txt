@@ -1,0 +1,11 @@
+nibabel==5.4.0
+numpy==2.4.2
+opencv_python==4.11.0.86
+opencv_python_headless==4.11.0.86
+pandas==3.0.1
+Pillow==12.1.1
+pydicom==3.0.1
+SimpleITK==2.4.0
+SimpleITK==2.5.3
+tqdm==4.67.1
+ultralytics==8.3.166

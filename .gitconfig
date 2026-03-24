@@ -1,0 +1,5 @@
+[safe]
+	directory = /home/LJR/Mucus_project/demo_mucusAlgorithms
+	directory = *
+[credential]
+	helper = "!f() { /workspace/.vscode-server/bin/488a1f239235055e34e673291fb8d8c810886f81/node /tmp/vscode-remote-containers-a378d687-6416-4fd7-88a8-06a032473c0c.js git-credential-helper $*; }; f"

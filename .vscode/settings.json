@@ -6,14 +6,19 @@
         "data/**": true,
         "weights/**": true,
         "Mucus/**": true,
-        "Train_result/**":true
+        "Train_result/**":true,
+        ".vscode-server/**":true,
+        ".gnupg**":true
+
     },
     // 2. 实用优化：全局搜索（Ctrl+Shift+F）时跳过这些大目录
     "search.exclude": {
         "dataset/": true,
         "dataset_280/": true,
         "data/": true,
-        "Mucus/": true
+        "Mucus/": true,
+        ".vscode-server/**":true,
+        ".gnupg**":true
     }
     // 注意：这里没有添加 files.exclude，所以文件夹在左侧依然可见
 }

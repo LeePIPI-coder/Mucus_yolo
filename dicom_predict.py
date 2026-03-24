@@ -105,8 +105,8 @@ def make_patches_from_volume(vol, out_images_dir: Path, mapping_csv: Path, patch
                 patch[0:h_src, 0:w_src] = src
                 fname = f"patch_z{z:04d}_x{x:05d}_y{y:05d}.png"
                 fpath = out_images_dir / fname
-                if z == 319 :
-                    cv2.imwrite(str(fpath), patch)
+                # if z == 319 :
+                cv2.imwrite(str(fpath), patch)
                 records.append({
                     'filename': fname,
                     'slice': int(z),

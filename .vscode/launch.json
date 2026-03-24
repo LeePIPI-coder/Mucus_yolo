@@ -5,6 +5,48 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"hu_distribution_analyzer.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "hu_distribution_analyzer.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"run_all_folds.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "run_all_folds.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"enmerge_csv.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "enmerge_csv.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"predict.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "predict.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"caculate_FROC_2d.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "caculate_FROC_2d.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"caculate_FROC_3d.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "caculate_FROC_3d.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "dicom_predict.py",
             "type": "debugpy",
             "request": "launch",

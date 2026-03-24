@@ -1,0 +1,27 @@
+HU Value Distribution Analysis
+========================================
+
+Statistical Summary:
+--------------------
+Mean HU: 35.27
+Std Deviation: 40.53
+Min HU: -72.00
+Max HU: 86.00
+Median HU: 52.00
+25th Percentile: 33.00
+75th Percentile: 61.00
+Total Voxels in Mask: 41
+
+HU Value Distribution:
+--------------------
+HU Range	Count	Percentage
+[-85.0, -70.0]	1	2.44%
+[-70.0, -55.0]	2	4.88%
+[-40.0, -25.0]	3	7.32%
+[-25.0, -10.0]	1	2.44%
+[-10.0, 5.0]	1	2.44%
+[20.0, 35.0]	3	7.32%
+[35.0, 50.0]	8	19.51%
+[50.0, 65.0]	16	39.02%
+[65.0, 80.0]	5	12.20%
+[80.0, 95.0]	1	2.44%

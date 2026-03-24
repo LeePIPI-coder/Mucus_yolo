@@ -72,7 +72,7 @@ class SqlcipherStorageReader(StorageReaderBase):
         cur = self.__conn.cursor()
         study_list: list[tuple[int, str, str, str]] = []
         cur.execute(
-            "SELECT id, study_id, accession_number, study_instance_uid FROM study "
+            "SELECT id, study_id, accession_number, study_instance_uid, study_date_time FROM study "
             "WHERE fk_patient_id = ?;",
             (patient_db_id,),
         )
@@ -81,9 +81,10 @@ class SqlcipherStorageReader(StorageReaderBase):
             study_id,
             accession_number,
             study_instance_uid,
+            study_date_time,
         ) in cur.fetchall():
             study_list.append(
-                (study_db_id, study_id, accession_number, study_instance_uid)
+                (study_db_id, study_id, accession_number, study_instance_uid, study_date_time)
             )
         return study_list
 
@@ -287,6 +288,7 @@ class SqlcipherStorageReader(StorageReaderBase):
         accession_number: str,
         study_instance_uid: str,
         updated_at,
+        study_date_time,
     ) -> None:
         """通过检查数据库ID添加序列信息
 
@@ -321,7 +323,8 @@ class SqlcipherStorageReader(StorageReaderBase):
                     rows,
                     cols,
                     sop_instance_count,
-                    updated_at
+                    updated_at,
+                    study_date_time
                 )
             )
 
@@ -336,7 +339,7 @@ class SqlcipherStorageReader(StorageReaderBase):
         # 获取所有患者信息
         for (patient_db_id, patient_id, patient_name, updated_at) in self.__get_all_patient():
             # 获取患者对应的检查信息
-            for (study_db_id, study_id, accession_number, study_instance_uid,) in self.__get_studies_by_patient_db_id(patient_db_id):
+            for (study_db_id, study_id, accession_number, study_instance_uid, study_date_time) in self.__get_studies_by_patient_db_id(patient_db_id):
                 # 获取检查对应的序列信息
                 self.__append_series_by_study_db_id(
                     series_info_list,
@@ -346,7 +349,8 @@ class SqlcipherStorageReader(StorageReaderBase):
                     study_id,
                     accession_number,
                     study_instance_uid,
-                    updated_at
+                    updated_at,
+                    study_date_time
                 )
         return series_info_list
 

@@ -11,7 +11,7 @@ from gzip import compress
 from re import match
 from urllib import request, error
 
-from ..settings import (
+from simAPSMaskUpload.settings import (
     MASK_ALL,
     MASK_WHOLE_LUNG,
     MASK_TYPES,
@@ -20,9 +20,10 @@ from ..settings import (
     ACCESS_TOKEN,
     CALLING_COUNT,
 )
-from ..StorageReader.SeriesList import SeriesList, SeriesItem
-from .UploadResult import UploadResult, UploadResults
-from ..StorageReader.StorageReaderBase import StorageReaderBase
+from simAPSMaskUpload.logger import logger
+from simAPSMaskUpload.StorageReader.SeriesList import SeriesList, SeriesItem
+from simAPSMaskUpload.ConsoleApp.UploadResult import UploadResult, UploadResults
+from simAPSMaskUpload.StorageReader.StorageReaderBase import StorageReaderBase
 
 __all__ = ["upload_research_masks", "upload_empty_masks", "calling_aps_task"]
 

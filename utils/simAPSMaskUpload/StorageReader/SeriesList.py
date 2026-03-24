@@ -46,7 +46,8 @@ class SeriesItem:
         cols: int,
         sop_instance_count: int,
         updated_at: str,
-        sopInstanceUid:str=None,
+        study_date_time: str
+        # sopInstanceUid:str=None,
         # top_left:tuple=None,
         # bottom_right:tuple=None,
         # patient_vol: float=None
@@ -81,8 +82,8 @@ class SeriesItem:
         self.cols = cols
         self.sop_instance_count = sop_instance_count
         self.updated_at = updated_at
-
-        self.sopInstanceUid = sopInstanceUid
+        self.study_date_time = study_date_time
+        # self.sopInstanceUid = sopInstanceUid
         # self.top_left= top_left
         # self.bottom_right = bottom_right
         # self.patient_vol = patient_vol

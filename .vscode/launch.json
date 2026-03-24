@@ -5,7 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-<<<<<<< HEAD
+            "name":"get_airway_mask.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "utils.get_airway_mask",
+            "console": "integratedTerminal"
+        },
+        {
             "name":"hu_distribution_analyzer.py",
             "type": "debugpy",
             "request": "launch",
@@ -45,7 +51,9 @@
             "type": "debugpy",
             "request": "launch",
             "program": "caculate_FROC_3d.py",
-=======
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Upload_dicom.py",
             "type": "debugpy",
             "request": "launch",
@@ -57,7 +65,6 @@
             "type": "debugpy",
             "request": "launch",
             "program": "Upload_Pre.py",
->>>>>>> 7ee92842cf98692a279bea4db5b92f02f3b9310b
             "console": "integratedTerminal"
         },
         {

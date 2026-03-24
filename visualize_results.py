@@ -1,3 +1,40 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+医学影像目标检测结果可视化工具
+
+功能：
+    1. 读取包含目标检测预测结果的CSV文件
+    2. 加载DICOM序列数据
+    3. 将预测的物理坐标转换为体素坐标
+    4. 在图像上绘制边界框和置信度分数
+    5. 为每个预测生成包含多个相邻切片的合成图像
+    6. 按StudyInstanceUID和SeriesInstanceUID组织目录结构并保存结果
+
+输入：
+    - CSV文件，包含以下字段：
+      - path：DICOM序列路径
+      - roi_patientPos_center_x, roi_patientPos_center_y, roi_patientPos_center_z：目标中心点坐标
+      - diameter：目标直径
+      - userAnnotComment.annotation：预测置信度
+
+输出：
+    - 按StudyInstanceUID和SeriesInstanceUID组织的目录结构
+    - 每个预测点生成的JPG图像，文件名格式为{z}_{y}_{x}.jpg
+    - 图像包含7个相邻切片的合成视图，每个切片上有红色边界框和置信度分数
+
+依赖库：
+    - os：目录操作
+    - SimpleITK：DICOM图像处理
+    - pandas：CSV文件处理
+    - argparse：命令行参数解析
+    - numpy：数组操作
+    - cv2：图像处理和绘制
+    - utils：包含坐标转换、DICOM加载、预处理和后处理函数
+
+使用方法：
+    python visualize_results.py -i <csv文件路径>
+"""
 import os
 import SimpleITK as sitk
 import pandas as pd

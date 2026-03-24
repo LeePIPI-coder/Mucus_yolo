@@ -9,8 +9,8 @@ docker/
 .dotnet/
 .vscode-server/
 .gnupg/
-froc_results/
 froc_results-3D/
+logs/
 
 
 # 忽略模型权重文件

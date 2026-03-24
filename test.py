@@ -7,10 +7,6 @@ import pandas as pd
 from ultralytics import YOLO
 from collections import defaultdict
 from utils import load_dicom_series, pre_processing, post_processing, coord_vox2pat
-
-
-
-
 def predict(image_path, inference_model):
     patch_size=128
     stride_hw=64

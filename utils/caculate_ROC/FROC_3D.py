@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import auc
 from tqdm import tqdm
 
-from data_code.logging import get_logger
+from ..logging import get_logger
 import matplotlib
 # 设置matplotlib支持中文字体
 # matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans', 'Arial Unicode MS', 'WenQuanYi Micro Hei']
@@ -189,7 +189,7 @@ def predict_on_patches(patches: List[np.ndarray], model, device='cpu', batch_siz
         
         # 使用YOLO模型进行批量预测
         try:
-            results = model(batch_inputs, iou=0.5, conf=0.1, verbose=False)  # 设置verbose=False减少输出
+            results = model(batch_inputs, iou=0.5, conf=0.8, verbose=False)  # 设置verbose=False减少输出
             # 确保results是一个列表
             if not isinstance(results, list):
                 results = [results]
@@ -199,7 +199,7 @@ def predict_on_patches(patches: List[np.ndarray], model, device='cpu', batch_siz
             # 如果批量预测失败，则逐个预测
             for patch in batch_inputs:
                 try:
-                    result = model(patch, iou=0.5, conf=0.1, verbose=False)
+                    result = model(patch, iou=0.5, conf=0.8, verbose=False)
                     predictions.append(result)
                 except Exception as e2:
                     logger.error(f"单个预测也失败: {e2}")

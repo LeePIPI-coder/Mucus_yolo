@@ -19,6 +19,8 @@
         "Mucus/": true,
         ".vscode-server/**":true,
         ".gnupg**":true
-    }
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda"
     // 注意：这里没有添加 files.exclude，所以文件夹在左侧依然可见
 }

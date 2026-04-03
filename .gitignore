@@ -11,6 +11,9 @@ docker/
 .gnupg/
 froc_results-3D/
 logs/
+hu_analysis_output/
+predictions_by_fold/
+resutls_froc/
 
 
 # 忽略模型权重文件

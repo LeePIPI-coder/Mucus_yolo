@@ -26,6 +26,48 @@
             "console": "integratedTerminal"
         },
         {
+            "name":"calculate_froc_and_get_FP_point.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "calculate_froc_and_get_FP_point.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"calculate_froc.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "calculate_froc.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"test_5fold.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "test_5fold.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"count_overlap_slices.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "count_overlap_slices.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"merge_masks.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "merge_masks.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"temprorate.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "temprorate.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name":"get_airway_mask.py",
             "type": "debugpy",
             "request": "launch",
@@ -40,10 +82,10 @@
             "console": "integratedTerminal"
         },
         {
-            "name":"run_all_folds.py",
+            "name":"caculate_FROC_all_folds.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "run_all_folds.py",
+            "module": "utils.caculate_ROC.caculate_FROC_all_folds",
             "console": "integratedTerminal"
         },
         {

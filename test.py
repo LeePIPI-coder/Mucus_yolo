@@ -6,7 +6,8 @@ import tqdm
 import pandas as pd
 from ultralytics import YOLO
 from collections import defaultdict
-from utils import load_dicom_series, pre_processing, post_processing, coord_vox2pat
+from utils.utils import load_dicom_series, pre_processing, post_processing, coord_vox2pat
+
 def predict(image_path, inference_model):
     patch_size=128
     stride_hw=64
@@ -98,7 +99,7 @@ if __name__ == "__main__":
                       default='/home/LJR/Mucus_project/demo_mucusAlgorithms/weights/det_mucus.pt', 
                       help="The fold model weight")
     args.add_argument("-i", "--image_path", 
-                      default="/home/LJR/Mucus_project/demo_mucusAlgorithms/dataset/test_dicom/E0001009V2-FC03",
+                      default="/data/Mucus_origin_data/广医粘液栓标注/E0001501_20111227/DICOM/73916312/8F131430",
                       help="dicom series's image folder path", type=str)
     args = args.parse_args()
     

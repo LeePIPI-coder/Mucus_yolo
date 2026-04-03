@@ -11,7 +11,7 @@ from gzip import compress
 from re import match
 from urllib import request, error
 
-from simAPSMaskUpload.settings import (
+from utils.simAPSMaskUpload.settings import (
     MASK_ALL,
     MASK_WHOLE_LUNG,
     MASK_TYPES,
@@ -20,10 +20,9 @@ from simAPSMaskUpload.settings import (
     ACCESS_TOKEN,
     CALLING_COUNT,
 )
-from simAPSMaskUpload.logger import logger
-from simAPSMaskUpload.StorageReader.SeriesList import SeriesList, SeriesItem
-from simAPSMaskUpload.ConsoleApp.UploadResult import UploadResult, UploadResults
-from simAPSMaskUpload.StorageReader.StorageReaderBase import StorageReaderBase
+from utils.simAPSMaskUpload.StorageReader.SeriesList import SeriesList, SeriesItem
+from utils.simAPSMaskUpload.ConsoleApp.UploadResult import UploadResult, UploadResults
+from utils.simAPSMaskUpload.StorageReader.StorageReaderBase import StorageReaderBase
 
 __all__ = ["upload_research_masks", "upload_empty_masks", "calling_aps_task"]
 
@@ -62,7 +61,7 @@ def __generate_init_mask_json(series_info: SeriesItem) -> dict[str, Any]:
 def __log_error_key(
     series_info: SeriesItem, json_file: str, key_name: str, err_msg: str
 ) -> None:
-    logger.error(
+    print(
         "检查ID %s 对应序列 %d 的 research3D 文件 %s 中字段 %s 无效。%s"
         % (
             series_info.study_id,
@@ -165,7 +164,7 @@ def __check_existed_json_valid(
     if not __check_key_exist(series_info, json_file, JSON_KEY_LESION, json_series_dict):
         # 如果没有 lesion 节点，追加一个 lesion 节点
         json_series_dict[JSON_KEY_LESION] = []
-        logger.info(
+        print(
             "检查ID %s 对应序列 %d 的 research3D 文件 %s 中不存在字段 %s，程序中进行追加。上一条 ERROR 可以忽略"
             % (
                 series_info.study_id,
@@ -214,7 +213,7 @@ def __get_data_from_json_file(
             start_lesion_index = 0
         else:
             start_lesion_index = lesion_annot_3D_json[JSON_KEY_STUDY][0][JSON_KEY_SERIES][0][JSON_KEY_LESION].__len__()
-            logger.info(
+            print(
                 f"""检查ID {series_info.study_id} 对应序列 {series_info.series_number} 的 research3D 文件 
                         {json_file} 中已经存在 {start_lesion_index} 个病变, 新的掩膜病变将会追加。""")
 
@@ -288,16 +287,16 @@ def __get_xml_data(ziped_file: ZipFile, series_info: SeriesItem, mask_zip: Path)
 
 
 def __generate_json_lesion(
-    series_info: SeriesItem, mask_file: str, has_pixel_mask: bool, mask_name: str, detect_box: list
+    series_info: SeriesItem, mask_file: str, has_pixel_mask: bool, mask_name: str,
 ) -> dict[str, Any]:
     json_lesion: dict[str, Any] = {}
     json_lesion["hasPixelMask"] = has_pixel_mask
     json_lesion["lesionType"] = "ELesionAnnotType_ROI_3D"
     json_lesion["maskFileNameSegmask"] = mask_file
-    # json_lesion["maskPos"] = f"{series_info.top_left}-{series_info.bottom_right}"
+    json_lesion["maskPos"] = f"({series_info.top_left})-({series_info.bottom_right})"
     # json_lesion["measureString"] = f"{series_info.patient_vol} cc"
-    json_lesion["roi_patientPos_max"] = detect_box[1]
-    json_lesion["roi_patientPos_min"] = detect_box[0]
+    json_lesion["roi_patientPos_max"] = series_info.patient_pos_max.__str__()
+    json_lesion["roi_patientPos_min"] = series_info.patient_pos_min.__str__()
     json_lesion["sopInstanceUid"] = series_info.sopInstanceUid.__str__()
     json_comment_dict = {}
     json_comment_dict["__valid"] = True
@@ -354,6 +353,54 @@ def __generate_lesion_file_and_append_lesion(
         json_lesions.append(
             __generate_json_lesion(
                 series_info, lesion_stem + lesion_suffix, True, mask_name, detect_box
+            )
+        )
+
+def __generate_lesion_file_and_append_lesion_mask(
+    dim_X: int,
+    dim_Y: int,
+    dim_Z: int,
+    gz_compressed_mask: bytes | bytearray,
+    series_info: SeriesItem,
+    results_dir: str,
+    mask_name: str,
+    json_lesions: list[dict[str, Any]],
+    start_lesion_index: int,
+) -> None:
+
+    lesion_stem = "lesionAnnot3D-%03d.%dx%dx%d" % (
+        start_lesion_index,
+        dim_X,
+        dim_Y,
+        dim_Z,
+    )
+    lesion_temp = results_dir + "/" + lesion_stem
+    lesion_suffix = ".psegmaskz"
+    lesion_file = lesion_temp + lesion_suffix
+    if path.isfile(lesion_file):
+        backup_file = (
+            lesion_temp
+            + "_backup_"
+            + datetime.now().strftime("%Y%m%d_%H%M%S")
+            + lesion_suffix
+        )
+        copy2(lesion_file, backup_file)
+        print(
+            "检查ID %s 对应序列 %d 已存在research掩膜文件 %s，现备份至 %s"
+            % (
+                series_info.study_id,
+                series_info.series_number,
+                lesion_file,
+                backup_file,
+            )
+        )
+    with open(lesion_file, "wb") as f:
+        f.write(gz_compressed_mask)
+
+    # 追加病变到 lesionAnnot3D.json 文件中
+        json_lesions.append(
+            __generate_json_lesion(
+                series_info, lesion_stem + lesion_suffix, True, mask_name
             )
         )
 
@@ -443,7 +490,7 @@ def __generate_annot_json_if_not_existed(
 ) -> tuple[dict[str, Any], int]:
     if not path.isdir(results_dir):
         mkdir(results_dir)
-        logger.debug(
+        print(
             "检查ID %s 对应序列 %d 的结果文件目录 %s 不存在"
             % (
                 series_info.study_id,
@@ -455,7 +502,7 @@ def __generate_annot_json_if_not_existed(
     else:
         # 假如已经存在 lesionAnnot3D.json，读取其中内容
         if not path.isfile(lesion_annot_3D_file):
-            logger.debug(
+            print(
                 "检查ID %s 对应序列 %d 的 research3D 文件 %s 不存在"
                 % (
                     series_info.study_id,

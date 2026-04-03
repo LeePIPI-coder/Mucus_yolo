@@ -40,16 +40,16 @@ class SeriesItem:
         series_number: int,
         series_instance_uid: str,
         abs_path: str,
-        # patient_pos_max: Position,
-        # patient_pos_min: Position,
+        patient_pos_max: Position,
+        patient_pos_min: Position,
         rows: int,
         cols: int,
         sop_instance_count: int,
         updated_at: str,
-        study_date_time: str
-        # sopInstanceUid:str=None,
-        # top_left:tuple=None,
-        # bottom_right:tuple=None,
+        study_date_time: str,
+        sopInstanceUid:str=None,
+        top_left:tuple=None,
+        bottom_right:tuple=None,
         # patient_vol: float=None
     ) -> None:
         """构造函数
@@ -76,16 +76,16 @@ class SeriesItem:
         self.series_number = series_number
         self.series_instance_uid = series_instance_uid
         self.abs_path = abs_path
-        # self.patient_pos_max = patient_pos_max
-        # self.patient_pos_min = patient_pos_min
+        self.patient_pos_max = patient_pos_max
+        self.patient_pos_min = patient_pos_min
         self.rows = rows
         self.cols = cols
         self.sop_instance_count = sop_instance_count
         self.updated_at = updated_at
         self.study_date_time = study_date_time
-        # self.sopInstanceUid = sopInstanceUid
-        # self.top_left= top_left
-        # self.bottom_right = bottom_right
+        self.sopInstanceUid = sopInstanceUid
+        self.top_left= top_left
+        self.bottom_right = bottom_right
         # self.patient_vol = patient_vol
 
 

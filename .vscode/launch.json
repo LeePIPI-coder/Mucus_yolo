@@ -5,6 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"delate_UPmask.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "delate_UPmask.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"test_segmaskz.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "test_segmaskz.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"split_niigz_label.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "utils.data_code.split_niigz_label",
+            "console": "integratedTerminal"
+        },
+        {
             "name":"get_airway_mask.py",
             "type": "debugpy",
             "request": "launch",

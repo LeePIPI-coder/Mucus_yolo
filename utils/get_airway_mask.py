@@ -12,7 +12,7 @@ if __name__ == "__main__":
     all_patient = sql.get_all_series_list()
         
     # all_patient = [patient for patient in all_patient_list if datetime.strptime(patient.updated_at, "%Y-%m-%d %H:%M:%S") >= datetime.strptime(start_time, "%Y-%m-%d")]
-    logger = get_logger("..logs/get_airway_mask")
+    logger = get_logger("logs/get_airway_mask")
     for patient in tqdm.tqdm(all_patient, desc="提取气道掩码中"):
         check_time = datetime.strptime(patient.study_date_time, "%Y-%m-%d %H:%M:%S")
         patient_id = patient.patient_id

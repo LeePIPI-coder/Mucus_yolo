@@ -13,7 +13,11 @@ froc_results-3D/
 logs/
 hu_analysis_output/
 predictions_by_fold/
-resutls_froc/
+display_results/
+horizontal_results/
+rotate_results/
+
+
 
 
 # 忽略模型权重文件

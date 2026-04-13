@@ -63,7 +63,7 @@ def predict(image_path, inference_model):
                     world_coord_center = np.array(coord_vox2pat([center_x, center_y, center_z], info['origin'], info['spacing'], info['direction']))
                     world_coord_min = np.array(coord_vox2pat([x1_orig, y1_orig, z1_orig], info['origin'], info['spacing'], info['direction']))
                     world_coord_max = np.array(coord_vox2pat([x2_orig, y2_orig, z2_orig], info['origin'], info['spacing'], info['direction']))
-
+                    
                     new_df['StudyInstanceUID'].append(info['StudyInstanceUID'])
                     new_df['SeriesInstanceUID'].append(info['SeriesInstanceUID'])
                     new_df['roi_patientPos_min_x'].append(world_coord_min[0])
@@ -88,6 +88,10 @@ def predict(image_path, inference_model):
                     new_df['diameter_y'].append(diay) # pixel level
                     new_df['diameter_z'].append(diaz) # pixel level
                     new_df['path'].append(image_path)
+                    # new_df['x1_orig'].append(x1_orig) # pixel coordinate
+                    # new_df['y1_orig'].append(y1_orig) # pixel coordinate
+                    # new_df['x2_orig'].append(x2_orig) # pixel coordinate
+                    # new_df['y2_orig'].append(y2_orig) # pixel coordinate
 
     new_df = pd.DataFrame(new_df)
     filtered_df = post_processing(new_df)

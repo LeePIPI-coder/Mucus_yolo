@@ -118,13 +118,13 @@ def process_fold_predictions(csv_path, base_model_path_pattern, output_dir="./pr
 def main():
     parser = argparse.ArgumentParser(description="根据折数加载对应模型权重进行预测")
     parser.add_argument("--csv_path", type=str, 
-                        default="/workspace/test_fold_data.csv",
+                        default="/data/yolo_dataset_249/Kfold_neg_0/5_scan_data.csv",
                         help="CSV文件路径，包含val_fold和dicom_path列")
     parser.add_argument("--base_model_path", type=str,
-                        default="Train_result/Mucus_249_neg_0/Train_20260302_fold{fold}/weights/best.pt",
+                        default="Train_result/Mucus_249_neg_0/Train_fold{fold}/weights/best.pt",
                         help="基础模型路径模式，其中{fold}会被替换为具体的折数")
     parser.add_argument("--output_dir", type=str, 
-                        default="./predictions_by_fold",
+                        default="./predictions_by_fold/5-scan",
                         help="输出目录")
     
     args = parser.parse_args()

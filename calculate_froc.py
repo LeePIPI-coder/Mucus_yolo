@@ -152,7 +152,11 @@ def calculate_froc_3d(predictions, ground_truths_3d, patient_count, iou_threshol
     thresholds = []  # 记录每个点的阈值
     
     for pred in predictions:
-        score, pred_box = pred
+        # 支持2元素元组 (score, pred_box) 或 3元素元组 (score, pred_box, row)
+        if len(pred) >= 2:
+            score, pred_box = pred[0], pred[1]
+        else:
+            continue
         
         # 找到IoU最大的ground truth
         max_iou = 0
@@ -281,7 +285,92 @@ def coord_pat2vox(pat, origin, spacing, direction):
     return tuple(voxel_coord)
 
 
-def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_threshold=0.01):
+def match_predictions_with_labels(predictions_with_details, ground_truths_3d, patient_count, iou_threshold=0.01, min_confidence=None):
+    """
+    将预测结果与标签进行匹配，创建带有TP/FP标签的新表格
+
+    Args:
+        predictions_with_details: 预测结果列表，每个元素为 (score, pred_box, original_row_data)
+        ground_truths_3d: 3D ground truth边界框列表 [(z_min, y_min, x_min, z_max, y_max, x_max)]
+        patient_count: 病例总数
+        iou_threshold: 3D IoU阈值
+        min_confidence: 最小置信度阈值，低于此值的预测将被跳过
+
+    Returns:
+        results_df: 包含预测信息和TP/FP标签的DataFrame
+    """
+    if not predictions_with_details:
+        return pd.DataFrame()
+
+    # 按置信度排序预测结果
+    predictions_sorted = sorted(predictions_with_details, key=lambda x: x[0], reverse=True)
+
+    # 跟踪每个ground truth是否被检测到
+    detected = [False] * len(ground_truths_3d)
+
+    results = []
+
+    for pred in predictions_sorted:
+        score, pred_box, original_row = pred
+
+        # 跳过低于最小置信度阈值的预测
+        if min_confidence is not None and score < min_confidence:
+            continue
+
+        # 找到IoU最大的ground truth
+        max_iou = 0
+        best_gt_idx = -1
+
+        for i, gt_box in enumerate(ground_truths_3d):
+            if not detected[i]:
+                iou = calculate_3d_iou(pred_box, gt_box)
+                if iou > max_iou:
+                    max_iou = iou
+                    best_gt_idx = i
+
+        if max_iou >= iou_threshold:
+            # 真正例
+            label = "TP"
+            detected[best_gt_idx] = True
+        else:
+            # 假正例
+            label = "FP"
+
+        # 将原始行数据转换为字典
+        row_dict = original_row.to_dict() if hasattr(original_row, 'to_dict') else dict(original_row)
+
+        # 添加预测框的像素坐标信息
+        z_min, y_min, x_min, z_max, y_max, x_max = pred_box
+        row_dict['pixel_x_min'] = x_min
+        row_dict['pixel_y_min'] = y_min
+        row_dict['pixel_z_min'] = z_min
+        row_dict['pixel_x_max'] = x_max
+        row_dict['pixel_y_max'] = y_max
+        row_dict['pixel_z_max'] = z_max
+        row_dict['pixel_center_x'] = (x_min + x_max) / 2
+        row_dict['pixel_center_y'] = (y_min + y_max) / 2
+        row_dict['pixel_center_z'] = (z_min + z_max) / 2
+        row_dict['pixel_width'] = x_max - x_min
+        row_dict['pixel_height'] = y_max - y_min
+        row_dict['pixel_depth'] = z_max - z_min
+
+        # 添加IoU值和标签
+        row_dict['iou'] = max_iou
+        row_dict['prediction_type'] = label
+
+        results.append(row_dict)
+
+    results_df = pd.DataFrame(results)
+
+    # 调整列顺序，将prediction_type放在最后
+    if not results_df.empty:
+        cols = [col for col in results_df.columns if col != 'prediction_type'] + ['prediction_type']
+        results_df = results_df[cols]
+
+    return results_df
+
+
+def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_threshold=0.01, min_confidence=None):
     """
     处理指定折的预测结果，使用3D边界框计算FROC曲线
     
@@ -290,7 +379,7 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
         save_path: 结果保存路径
     """
     # 读取预测结果
-    pred_csv_path = f"/workspace/predictions_by_fold/predictions_fold_{fold}.csv"
+    pred_csv_path = f"/workspace/predictions_by_fold/249_neg_0/predictions_fold_{fold}.csv"
     if not os.path.exists(pred_csv_path):
         print(f"预测结果文件不存在: {pred_csv_path}")
         return
@@ -302,18 +391,18 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
     grouped = pred_df.groupby(['patient_key', 'path'])
     print(f"共有 {len(grouped)} 个数据样本")
     
-    all_predictions = []
+    all_predictions_with_details = []  # 包含详细信息的预测列表
     all_ground_truths_3d = []  # 存储所有3D ground truth
     unique_patients = set()  # 用于统计病例数
     processed_masks = set()  # 避免重复处理相同的掩码
-    
+
     for (patient, image_path), group in grouped:
         print(f"处理患者: {patient}")
         print(f"图像路径: {image_path}")
-        
+
         # 添加到唯一病例集合
         unique_patients.add(patient)
-        
+
         # 根据图像路径找到掩码路径（将"image"替换为"mask"）
         image_path = Path(image_path)
         if "DICOM" not in str(image_path):
@@ -323,9 +412,9 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
             mask_dir = image_path.parent.parent.parent
 
         mask_path = next(mask_dir.glob("*.nii.gz"), None)
-        
+
         print(f"掩码路径: {mask_path}")
-        
+
         if mask_path is None or not mask_path.exists():
             print(f"掩码文件不存在: {mask_path}")
             continue
@@ -334,18 +423,18 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
         if str(mask_path) not in processed_masks:
             # 加载掩码
             mask_array, mask_info = load_mask(str(mask_path))
-            
+
             # 将掩码转换为3D边界框
             gt_boxes_3d = mask_to_3d_boxes(mask_array)
-            
+
             # 收集3D ground truth
             all_ground_truths_3d.extend(gt_boxes_3d)
             processed_masks.add(str(mask_path))
-        
-        # 收集预测结果
-        for _, row in group.iterrows():
+
+        # 收集预测结果（带详细信息）
+        for idx, row in group.iterrows():
             score = row['userAnnotComment.annotation']
-            
+
             # 计算边界框的像素坐标
             min_x = row['roi_patientPos_min_x']
             min_y = row['roi_patientPos_min_y']
@@ -353,7 +442,7 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
             max_x = row['roi_patientPos_max_x']
             max_y = row['roi_patientPos_max_y']
             max_z = row['roi_patientPos_max_z']
-            
+
             # 将边界框坐标转换为像素坐标
             min_vox = coord_pat2vox(
                 [min_x, min_y, min_z],
@@ -367,26 +456,41 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
                 mask_info['spacing'],
                 mask_info['direction']
             )
-            
+
             x1 = min_vox[0]  # x坐标
             y1 = min_vox[1]  # y坐标
             z1 = min_vox[2]  # z坐标
             x2 = max_vox[0]  # x坐标
             y2 = max_vox[1]  # y坐标
             z2 = max_vox[2]  # z坐标
-            
+
             # 创建3D边界框 [z_min, y_min, x_min, z_max, y_max, x_max]
             pred_box = [z1, y1, x1, z2, y2, x2]
-            all_predictions.append((score, pred_box))
-    
+
+            # 保存预测结果，包含原始行数据用于后续输出
+            all_predictions_with_details.append((score, pred_box, row))
+
     # 计算病例数
     patient_count = len(unique_patients)
     print(f"病例总数: {patient_count}")
     print(f"3D Ground Truth 数量: {len(all_ground_truths_3d)}")
-    print(f"预测数量: {len(all_predictions)}")
-    
+    print(f"预测数量: {len(all_predictions_with_details)}")
+
+    # 创建带有TP/FP标签的结果表格
+    results_df = match_predictions_with_labels(
+        all_predictions_with_details, all_ground_truths_3d, patient_count, iou_threshold, min_confidence
+    )
+
+    # 保存带有TP/FP标签的结果
+    if not results_df.empty:
+        results_output_path = f"{save_path}/predictions_with_labels_fold_{fold}.csv"
+        results_df.to_csv(results_output_path, index=False)
+        print(f"带有TP/FP标签的预测结果已保存到 {results_output_path}")
+        print(f"TP数量: {(results_df['prediction_type'] == 'TP').sum()}")
+        print(f"FP数量: {(results_df['prediction_type'] == 'FP').sum()}")
+
     # 计算FROC曲线
-    fps, sensitivities, thresholds = calculate_froc_3d(all_predictions, all_ground_truths_3d, patient_count, iou_threshold)
+    fps, sensitivities, thresholds = calculate_froc_3d(all_predictions_with_details, all_ground_truths_3d, patient_count, iou_threshold)
     
     # 保存结果
     froc_df = pd.DataFrame({
@@ -415,6 +519,7 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
 
 
 if __name__ == "__main__":
-    save_path = "/workspace/resutls_froc"
+    save_path = "/workspace/results_froc/249_neg_0"
     # 处理第0折的预测结果
-    process_fold_predictions(fold=0, save_path=save_path, iou_threshold=0.01)
+    # 设置min_confidence过滤低置信度预测，例如0.5
+    process_fold_predictions(fold=4, save_path=save_path, iou_threshold=0.01, min_confidence=0.7037)

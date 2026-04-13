@@ -273,7 +273,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Generate YOLO k-fold dataset (Ultralytics).")
     ap.add_argument(
         "--yolo_root",
-        default="/home/LJR/Mucus_project/demo_mucusAlgorithms/dataset/yolo_dataset_249",
+        default="/data/yolo_dataset_249",
         help="yolo_dataset 根目录，包含 train/ valid等",
     )
     ap.add_argument(
@@ -298,13 +298,13 @@ if __name__ == "__main__":
     )
     ap.add_argument(
         "--out_dirname",
-        default="Kfold",
+        default="Kfold_neg_0",
         help="输出目录名，会创建在 yolo-root 下，例如 yolo_dataset/kfold/",
     )
     ap.add_argument(
         "--use_splits",
-        default="train,valid",
-        help="参与 k-fold 的 split目录，用逗号分隔(默认 train,valid；通常 test 不参与)",
+        default="All",
+        help="参与 k-fold 的 split目录，用逗号分隔(可选参数:train,valid; All), 目录下要包含images,labels目录",
     )
     ap.add_argument(
         "--save_fold",

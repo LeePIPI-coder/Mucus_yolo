@@ -72,13 +72,10 @@ def get_dicom_for_fold(csv_file_path, data_directory, fold_number):
     """
     return find_dicom_paths(csv_file_path, data_directory, target_folds=fold_number)
 
-def main():
+def main(csv_file_path, data_directory):
     """
     根据分折数据表获取所有数据在原始目录中的DICOM目录路径并保存到CSV文件
     """
-    # 设置文件路径
-    csv_file_path = '/data/yolo_dataset_249/Kfold/fold_assignment.csv'
-    data_directory = '/data/Mucus_origin_data'
     
     # 检查文件是否存在
     if not os.path.exists(csv_file_path):
@@ -105,7 +102,11 @@ def main():
     return all_dicom_paths
 
 if __name__ == "__main__":
-    results = main()
+    
+    # 设置文件路径
+    csv_file_path = '/data/yolo_dataset_249/Kfold_neg_0/5_scan.csv'
+    data_directory = '/data/Mucus_origin_data'
+    results = main(csv_file_path, data_directory)
     # 将字典结果转换为适当的DataFrame格式
     rows = []
     for patient_key, info in results.items():
@@ -116,6 +117,6 @@ if __name__ == "__main__":
         })
     
     root_df = pd.DataFrame(rows)
-    root_df.to_csv('./test_fold_data.csv', index=False)
-    print(f"\n结果已保存到 ./test_fold_data.csv")
+    root_df.to_csv('/data/yolo_dataset_249/Kfold_neg_0/5_scan_data.csv', index=False)
+    print(f"\n结果已保存到 /data/yolo_dataset_249/Kfold_neg_0/5_scan_data.csv") 
     print(f"共保存了 {len(root_df)} 行数据")

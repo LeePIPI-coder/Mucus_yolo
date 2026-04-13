@@ -52,7 +52,7 @@ def make_patch_data(args):
         # 创建一个新的字典来存储新的DataFrame,使用defaultdict(list)可以避免KeyError
         # new_df = defaultdict(list)
 
-        # 遍历每个数据集（train, valid, test）；dataset 中为图像完整路径
+        # 遍历每个数据集（train, valid）；dataset 中为图像完整路径
         for i, dataset in enumerate([trainset, validset]):
             img_save_dir = os.path.join(savePath, saveSetName[i], 'images')
             mask_save_dir = os.path.join(savePath, saveSetName[i], 'masks')
@@ -161,6 +161,7 @@ def make_patch_data(args):
         os.makedirs(mask_save_dir, exist_ok=True)
 
         for f, image_path in enumerate(paths):
+                
             file = os.path.basename(image_path)
             print('-'*20 + f"processing All--{file.replace('.nii.gz','')}--{f+1}/{n}" + '-'*20)
             # new_df['filename'].append(file)
@@ -253,8 +254,8 @@ if __name__ == "__main__":
         default="/data/nifti_image_paths.csv",
         help="CSV 文件路径，需包含 path 列（或仅一列路径）",
     )
-    parser.add_argument("-split", default=True, help="是否需要将数据分成训练、验证、测试")
-    parser.add_argument("-save_path", default=r"/data/yolo_dataset_249-1", help="save path of the dataset root")
+    parser.add_argument("-split", default=False, help="是否需要将数据分成训练、验证")
+    parser.add_argument("-save_path", default=r"/data/yolo_dataset_249", help="save path of the dataset root")
     args = parser.parse_args()
 
     make_patch_data(args)

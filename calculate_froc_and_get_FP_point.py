@@ -234,6 +234,65 @@ def plot_froc_curve(fps, sensitivities, fold=0, save_path="/workspace/resutls_fr
     plt.show()
 
 
+def calculate_froc_auc(fps, sensitivities, fixed_fp_points=None):
+    """
+    计算FROC曲线下面积 (FROC-AUC)
+
+    Args:
+        fps: 假阳性率列表 (平均每个病例的FP数)
+        sensitivities: 灵敏度列表
+        fixed_fp_points: 固定的FP数列表，如 [1, 5, 10, 20]。
+                        如果为None，则使用整个FPS范围计算AUC。
+                        如果指定，则只在这些固定点范围内计算AUC。
+
+    Returns:
+        auc: FROC曲线下面积
+    """
+    if not fps or not sensitivities or len(fps) != len(sensitivities):
+        return 0.0
+
+    # 对fps排序（确保x轴递增）
+    sorted_pairs = sorted(zip(fps, sensitivities))
+    sorted_fps = [p[0] for p in sorted_pairs]
+    sorted_sens = [p[1] for p in sorted_pairs]
+
+    if fixed_fp_points is None:
+        # 原始逻辑：使用整个FPS范围
+        auc = np.trapz(sorted_sens, sorted_fps)
+    else:
+        # 固定FP点数计算：在指定的FP点范围内计算AUC
+        max_fp = max(sorted_fps) if sorted_fps else 0
+        min_fp = 0.0
+
+        # 过滤有效的固定点（不超过最大FP数）
+        valid_fp_points = sorted([fp for fp in fixed_fp_points if fp <= max_fp])
+        if not valid_fp_points:
+            # 如果没有有效点，使用整个范围
+            auc = np.trapz(sorted_sens, sorted_fps)
+        else:
+            # 使用线性插值获取每个固定FP点对应的sensitivity
+            # fps可能不是从0开始，需要补充(0, 0)点
+            interp_fps = [0.0] + sorted_fps
+            interp_sens = [0.0] + sorted_sens
+
+            # 创建插值函数
+            from scipy.interpolate import interp1d
+            interp_func = interp1d(interp_fps, interp_sens, kind='linear',
+                                  bounds_error=False, fill_value=(0.0, sorted_sens[-1]))
+
+            # 获取固定点对应的sensitivity
+            sens_at_fixed = [float(interp_func(fp)) for fp in valid_fp_points]
+
+            # 构建固定点列表，包括起点和终点
+            full_fp_points = [min_fp] + valid_fp_points + [max_fp]
+            full_sens_points = [0.0] + sens_at_fixed + [sorted_sens[-1]]
+
+            # 使用梯形积分法计算AUC
+            auc = np.trapz(full_sens_points, full_fp_points)
+
+    return auc
+
+
 def find_sensitivity_at_target_fp(fps, sensitivities, thresholds, target_fp_per_patient):
     """
     计算平均每个病例出现目标FP数时对应的sensitivity和置信度阈值
@@ -288,7 +347,7 @@ def coord_pat2vox(pat, origin, spacing, direction):
     return tuple(voxel_coord)
 
 
-def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_threshold=0.01):
+def process_fold_predictions(fold=0, save_path="/workspace/results_froc", iou_threshold=0.01, name=None, fixed_fp_points=None):
     """
     处理指定折的预测结果，使用3D边界框计算FROC曲线
     
@@ -297,7 +356,7 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
         save_path: 结果保存路径
     """
     # 读取预测结果
-    pred_csv_path = f"/workspace/predictions_by_fold/predictions_fold_{fold}.csv"
+    pred_csv_path = f"/workspace/predictions_by_fold/{name}/predictions_fold_{fold}.csv"
     if not os.path.exists(pred_csv_path):
         print(f"预测结果文件不存在: {pred_csv_path}")
         return
@@ -331,7 +390,7 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
 
         mask_path = next(mask_dir.glob("*.nii.gz"), None)
         
-        print(f"掩码路径: {mask_path}")
+        print(f"标签掩码路径: {mask_path}")
         
         if mask_path is None or not mask_path.exists():
             print(f"掩码文件不存在: {mask_path}")
@@ -473,11 +532,30 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
     print("FROC曲线计算完成")
     print(f"最大灵敏度: {max(sensitivities) if sensitivities else 0:.4f}")
     print(f"平均每个病例对应的最大假阳性数: {fps[sensitivities.index(max(sensitivities))] if sensitivities else 0:.4f}")
+
+    # 计算FROC曲线下面积
+    froc_auc_full = calculate_froc_auc(fps, sensitivities, fixed_fp_points=None)
+    print(f"FROC曲线下面积 (完整范围 FROC-AUC): {froc_auc_full:.4f}")
+
+    # 如果指定了固定FP点，计算限定范围内的AUC
+    if fixed_fp_points is not None and len(fixed_fp_points) > 0:
+        froc_auc_fixed = calculate_froc_auc(fps, sensitivities, fixed_fp_points=fixed_fp_points)
+        print(f"固定FP点 {fixed_fp_points} 范围内的 FROC-AUC: {froc_auc_fixed:.4f}")
+
     print(f"平均每个病例出现{target_fp_per_patient}个FP时的灵敏度: {target_sensitivity:.4f}")
     print(f"平均每个病例出现{target_fp_per_patient}个FP时的置信度阈值: {target_threshold:.4f}")
 
 
 if __name__ == "__main__":
     # 处理第0折的预测结果
-    save_path = "/workspace/froc_results"
-    process_fold_predictions(fold=0, save_path=save_path, iou_threshold=0.01)
+    name = "249_neg_0"
+    save_path = f"/workspace/results_froc/{name}"
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    # 固定FP点数，用于计算限定范围内的FROC-AUC
+    # 常见设置为 [1, 2, 4, 8, 16] 或 [1, 5, 10, 20] 等
+    fixed_fp_points = [100]
+
+    process_fold_predictions(fold=4, save_path=save_path, iou_threshold=0.01,
+                            name=name, fixed_fp_points=fixed_fp_points)

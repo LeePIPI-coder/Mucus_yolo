@@ -106,8 +106,8 @@ def create_yolo_annotations_with_cc3d(image_dir, mask_dir, output_txt_dir, categ
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="make txt")
-    parser.add_argument("-path", default=r"/home/LJR/Mucus_project/demo_mucusAlgorithms/dataset/yolo_dataset_249", help="dataset root path")
-    parser.add_argument("-set", default="valid" ,help="make yolo bbox txt of the set type")
+    parser.add_argument("-path", default=r"/data/yolo_dataset_249", help="dataset root path")
+    parser.add_argument("-set", default="All" ,help="make yolo bbox txt of the set type")
     args = parser.parse_args()
 
 

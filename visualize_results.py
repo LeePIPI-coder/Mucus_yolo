@@ -8,7 +8,8 @@
     2. 加载DICOM序列数据
     3. 将预测的物理坐标转换为体素坐标
     4. 在图像上绘制边界框和置信度分数
-    5. 为每个预测生成包含多个相邻切片的合成图像
+    5. 为每个预测生成包含多个相邻切片的合成图像(共有7个相邻切片[z-3,z-2,z-1,z,z+1,z+2,z+3],
+        其中中间3个切片包含预测框，前后各2个切片作为对照)
     6. 按StudyInstanceUID和SeriesInstanceUID组织目录结构并保存结果
 
 输入：
@@ -41,15 +42,15 @@ import pandas as pd
 import argparse
 import numpy as np
 import cv2
-from utils import coord_pat2vox, load_dicom_series, pre_processing, post_processing
+from utils.utils import coord_pat2vox, load_dicom_series, pre_processing, post_processing
 
-def draw_boxes(pred_csv, output_dir):
+def draw_boxes(pred_csv, output_dir, score):
     # CSV 파일 읽기
     pred_df = pd.read_csv(pred_csv)
 
     # 출력 폴더 준비
     os.makedirs(output_dir, exist_ok=True)
-
+    print(f"共 {len(pred_df['path'].unique())} 个病例")
     for path in pred_df['path'].unique():
         image, info = load_dicom_series(path)
         spacing = info['spacing']
@@ -74,6 +75,8 @@ def draw_boxes(pred_csv, output_dir):
             y = int(volume_coord[1])
             z = int(volume_coord[2])
             score = float(row.get("userAnnotComment.annotation", 0))
+            if score < score:
+                continue
             for z in range(z, z+1):
                 get_coords.append([z, y, x])
                 if 0 < z-1:  
@@ -119,20 +122,22 @@ def draw_boxes(pred_csv, output_dir):
             if not os.path.isdir(os.path.join(output_dir, info['StudyInstanceUID'], info['SeriesInstanceUID'])):
                 os.makedirs(os.path.join(output_dir, info['StudyInstanceUID'], info['SeriesInstanceUID']))
             cv2.imwrite(os.path.join(output_dir, info['StudyInstanceUID'], info['SeriesInstanceUID'], output_filename), result_img)
-        print(f"[INFO] 저장 완료: {os.path.join(output_dir, info['StudyInstanceUID'], info['SeriesInstanceUID'])}")
+        print(f"[INFO] Saved: {os.path.join(output_dir, info['StudyInstanceUID'], info['SeriesInstanceUID'])}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prediction visualization")
-    parser.add_argument("-i", "--csv_path", required=True, help="csv file path")
+    parser.add_argument("-i", "--csv_path", default="/workspace/predictions_by_fold/249_neg_0/predictions_fold_4.csv", help="csv file path")
+    parser.add_argument("-s", "--score", default=0.7, type=float, help="score threshold of 100FP/pre-scan")
+    parser.add_argument("-o", "--output_dir", default="./display_results/fold4", help="output directory")
     args = parser.parse_args()
 
-    if not os.path.isdir("./results"):
-        os.makedirs("./results")
+    if not os.path.isdir(args.output_dir):
+        os.makedirs(args.output_dir)
 
     if os.path.isfile(args.csv_path):
         csv_path = args.csv_path
     else:
         raise FileNotFoundError(f"No csv file found in the provided directory: {args.csv_path}")
 
-    draw_boxes(csv_path, "./results")
+    draw_boxes(csv_path, args.output_dir, score=args.score)

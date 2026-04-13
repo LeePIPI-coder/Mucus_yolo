@@ -5,6 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"get_rotate_dicom.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "utils.data_code.get_rotate_dicom",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"visualize_results.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "visualize_results.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"get_fold_csv.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "utils.data_code.get_fold_csv",
+            "console": "integratedTerminal"
+        },
+        {
             "name":"delate_UPmask.py",
             "type": "debugpy",
             "request": "launch",
@@ -78,7 +99,7 @@
             "name":"hu_distribution_analyzer.py",
             "type": "debugpy",
             "request": "launch",
-            "program": "hu_distribution_analyzer.py",
+            "module": "utils.HU_analyzer.hu_distribution_analyzer",
             "console": "integratedTerminal"
         },
         {

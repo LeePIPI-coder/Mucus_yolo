@@ -235,27 +235,19 @@ def create_rotated_slices(
     base_v = np.cross(axis_direction_physical, base_u)
     base_v = base_v / np.linalg.norm(base_v)
 
-    # YZ面的法线方向（即X轴方向）
-    yz_normal = np.array([1.0, 0.0, 0.0])
-
     slices = []
     metadata_list = []
 
     for angle in angles:
+        angle_rad = np.deg2rad(angle)
+
         # u_axis: 沿线段方向（固定，线段躺在平面上）
         u_axis = axis_direction_physical.copy()
 
-        # w_axis: 垂直于u_axis且平行于YZ面的方向（切片的上下方向）
-        # np.cross(u_axis, yz_normal) 自动得到垂直于u_axis且X分量为0的向量
-        w_axis = np.cross(u_axis, yz_normal)
-        w_norm = np.linalg.norm(w_axis)
-        if w_norm < 1e-6:
-            # 如果u_axis平行于X轴，使用备用方向
-            w_axis = np.cross(u_axis, np.array([0.0, 1.0, 0.0]))
-        w_axis = w_axis / np.linalg.norm(w_axis)
-
-        # v_axis: 同时垂直于u_axis和w_axis（切片的左右方向）
-        v_axis = np.cross(u_axis, w_axis)
+        # v_axis: 在垂直于线段的平面内旋转（始终保持垂直于axis_direction）
+        # 当angle=0°时，v_axis=base_u
+        # 当angle=90°时，v_axis=base_v
+        v_axis = base_u * np.cos(angle_rad) + base_v * np.sin(angle_rad)
         v_axis = v_axis / np.linalg.norm(v_axis)
 
         # 创建切片网格（物理空间，以轴中点为中心）
@@ -490,13 +482,13 @@ def main():
     parser = argparse.ArgumentParser(
         description='旋转切面与CT序列相交 - 提取绕给定轴旋转的切面与CT的交面'
     )
-    parser.add_argument('--input', '-i', default=r'/data/Mucus_origin_data/01-阳性数据/E0001046_20100112/DICOM/4F3DE55A/A357FDE0',
+    parser.add_argument('--input', '-i', default=r'/data/Mucus_origin_data/01-阳性数据/E0001341_20100811/DICOM/CBD26DE8/005F9244',
                         help='CT文件路径（DICOM文件夹或NIfTI文件）')
-    parser.add_argument('--axis_start', '-s', default='-123.175,8.20523,-1259.77',
+    parser.add_argument('--axis_start', '-s', default='-50.7884,20.5403,-1051.06',
                         help='旋转轴起点物理坐标，格式: x,y,z (单位mm)')
-    parser.add_argument('--axis_end', '-e', default='-69.4911,-13.0422,-1213.49', 
+    parser.add_argument('--axis_end', '-e', default='-38.7704,18.3295,-1087.72', 
                         help='旋转轴终点物理坐标，格式: x,y,z (单位mm)')
-    parser.add_argument('--diameter', '-d', type=float, default=6.7,
+    parser.add_argument('--diameter', '-d', type=float, default=5.4,
                         help='气道管直径，单位mm')
     parser.add_argument('--output', '-o', default='/workspace/rotate_results',
                         help='输出目录')

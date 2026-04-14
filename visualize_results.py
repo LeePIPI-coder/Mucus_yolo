@@ -44,7 +44,7 @@ import numpy as np
 import cv2
 from utils.utils import coord_pat2vox, load_dicom_series, pre_processing, post_processing
 
-def draw_boxes(pred_csv, output_dir, score):
+def draw_boxes(pred_csv, output_dir, conf_threshold):
     # CSV 파일 읽기
     pred_df = pd.read_csv(pred_csv)
 
@@ -75,7 +75,7 @@ def draw_boxes(pred_csv, output_dir, score):
             y = int(volume_coord[1])
             z = int(volume_coord[2])
             score = float(row.get("userAnnotComment.annotation", 0))
-            if score < score:
+            if conf_threshold < score:
                 continue
             for z in range(z, z+1):
                 get_coords.append([z, y, x])

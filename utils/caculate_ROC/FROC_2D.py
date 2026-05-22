@@ -539,7 +539,7 @@ def process_fold_data(csv_path: str, fold_number: int, model_path: Optional[str]
         patches, mask_patches, metadata = extract_patches_from_nii(
             image_path, mask_path, logger=logger
         )
-        
+          
         logger.info(f"  提取了 {len(patches)} 个patches")
         
         # 模型预测

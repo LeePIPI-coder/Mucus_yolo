@@ -50,6 +50,8 @@ def process_fold_predictions(csv_path, base_model_path_pattern, output_dir="./pr
     
     # 对每个折进行处理
     for fold in folds:
+        if fold > 0:
+            continue
         print(f"\n开始处理第 {fold} 折...")
         
         # 获取当前折的所有数据
@@ -57,8 +59,8 @@ def process_fold_predictions(csv_path, base_model_path_pattern, output_dir="./pr
         print(f"第 {fold} 折包含 {len(fold_data)} 个数据样本")
         
         # 构建当前折的模型路径
-        model_path = base_model_path_pattern.format(fold=fold)
-        
+        # model_path = base_model_path_pattern.format(fold=fold)
+        model_path = "/workspace/Train_result/Mucus_249_neg_0/Train_fold1/weights/best.pt"
         if not os.path.exists(model_path):
             print(f"警告: 模型文件不存在: {model_path}")
             print(f"跳过第 {fold} 折的处理")
@@ -75,9 +77,13 @@ def process_fold_predictions(csv_path, base_model_path_pattern, output_dir="./pr
         # 对当前折的每个数据进行预测
         
         for idx, row in fold_data.iterrows():
-
+            # if idx < 118:
+            #     continue
             dicom_path = row['dicom_path']
             
+            # patient_key = row['patient_key']
+            # if patient_key != "E0001009_20091120":
+            #     continue
             if not os.path.exists(dicom_path):
                 print(f"警告: DICOM路径不存在: {dicom_path}")
                 continue
@@ -105,7 +111,7 @@ def process_fold_predictions(csv_path, base_model_path_pattern, output_dir="./pr
             combined_results = pd.concat(all_fold_results, ignore_index=True)
             
             # 保存当前折的结果到单独的CSV文件
-            output_file = os.path.join(output_dir, f"predictions_fold_{fold}.csv")
+            output_file = os.path.join(output_dir, f"Predictions_fold_{fold}.csv")
             combined_results.to_csv(output_file, index=False)
             print(f"第 {fold} 折的预测结果已保存到: {output_file}")
             print(f"共 {len(combined_results)} 条预测结果")
@@ -118,13 +124,13 @@ def process_fold_predictions(csv_path, base_model_path_pattern, output_dir="./pr
 def main():
     parser = argparse.ArgumentParser(description="根据折数加载对应模型权重进行预测")
     parser.add_argument("--csv_path", type=str, 
-                        default="/data/yolo_dataset_249/Kfold_neg_0/5_scan_data.csv",
+                        default="/workspace/test_input_csv/249_neg_0/test_fold_data.csv",
                         help="CSV文件路径，包含val_fold和dicom_path列")
     parser.add_argument("--base_model_path", type=str,
                         default="Train_result/Mucus_249_neg_0/Train_fold{fold}/weights/best.pt",
                         help="基础模型路径模式，其中{fold}会被替换为具体的折数")
     parser.add_argument("--output_dir", type=str, 
-                        default="./predictions_by_fold/5-scan",
+                        default="./all_results/predictions_by_fold/249_test_me",
                         help="输出目录")
     
     args = parser.parse_args()

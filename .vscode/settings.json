@@ -21,6 +21,10 @@
         ".gnupg**":true
     },
     "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda"
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "workbench.editor.enablePreviewFromQuickOpen": true,
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.showTabs": "multiple",
+    "workbench.editor.wrapTabs": true
     // 注意：这里没有添加 files.exclude，所以文件夹在左侧依然可见
 }

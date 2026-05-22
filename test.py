@@ -79,7 +79,7 @@ def predict(image_path, inference_model):
                     new_df['roi_patient_diameter_y'].append(abs(world_coord_max[1] - world_coord_min[1]))
                     new_df['roi_patient_diameter_z'].append(abs(world_coord_max[2] - world_coord_min[2]))
                     new_df['LesionType'].append('ELesionAnnotType_ROI_3D')
-                    new_df['userAnnotComment.annotation'].append(score)
+                    new_df['detector_score'].append(score)
                     new_df['x'].append(world_coord_center[0]) # pixel coordinate
                     new_df['y'].append(world_coord_center[1]) # pixel coordinate
                     new_df['z'].append(world_coord_center[2]) # pixel coordinate

@@ -16,6 +16,13 @@ predictions_by_fold/
 display_results/
 horizontal_results/
 rotate_results/
+temp_data/
+results_froc/
+hu_analysis_output/
+all_results/
+3D_resnet_class/eval_results/
+3D_resnet_class/train_results/
+3D_resnet_class/MedicalNet_res_weight/
 
 
 # 忽略模型权重文件

@@ -144,10 +144,10 @@ def post_processing(df, iou_threshold=0.001):
     results = []
     for seriesuid, sub_df in df.groupby(series_uid_col):
         # "userAnnotComment.annotation" 기준 내림차순 정렬
-        if 'userAnnotComment.annotation' not in sub_df.columns:
-            raise RuntimeError("No userAnnotComment.annotation column found!")
+        if 'detector_score' not in sub_df.columns:
+            raise RuntimeError("No detector_score column found!")
 
-        sub_sorted = sub_df.sort_values('userAnnotComment.annotation', ascending=False).reset_index(drop=True)
+        sub_sorted = sub_df.sort_values('detector_score', ascending=False).reset_index(drop=True)
 
         boxes = np.array([
             [
@@ -160,7 +160,7 @@ def post_processing(df, iou_threshold=0.001):
             ]
             for i in range(len(sub_sorted))
         ])
-        scores = sub_sorted['userAnnotComment.annotation'].values.astype(float)
+        scores = sub_sorted['detector_score'].values.astype(float)
         if len(boxes) == 0:
             continue
         keep_idx = nms_3d(boxes, scores, iou_threshold)

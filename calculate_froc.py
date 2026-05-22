@@ -32,6 +32,48 @@ def load_mask(mask_path):
     return mask_array, info
 
 
+def load_gt_boxes_from_csv(csv_path, fold=None):
+    """
+    从GT_bboxes.csv直接读取GT边界框（体素坐标），跳过掩码加载和CC3D分析。
+
+    CSV列: voxel_center_i(宽度/x), voxel_center_j(高度/y), voxel_center_k(深度/z),
+           voxel_dim_i, voxel_dim_j, voxel_dim_k
+
+    Returns:
+        gt_boxes_dict: {patient_key: [[z_min, y_min, x_min, z_max, y_max, x_max], ...]}
+    """
+    df = pd.read_csv(csv_path)
+    if fold is not None:
+        df = df[df['fold'] == fold]
+
+    gt_boxes_dict = defaultdict(list)
+    for _, row in df.iterrows():
+        patient = row['patient_key']
+        ci, cj, ck = row['voxel_center_i'], row['voxel_center_j'], row['voxel_center_k']
+        di, dj, dk = row['voxel_dim_i'], row['voxel_dim_j'], row['voxel_dim_k']
+
+        x_min = ci - di / 2
+        x_max = ci + di / 2
+        y_min = cj - dj / 2
+        y_max = cj + dj / 2
+        z_min = ck - dk / 2
+        z_max = ck + dk / 2
+
+        gt_boxes_dict[patient].append([z_min, y_min, x_min, z_max, y_max, x_max])
+
+    return gt_boxes_dict
+
+
+def get_mask_metadata(mask_path):
+    """只加载掩码文件的元数据（原点、间距、方向），不读取像素数据。"""
+    mask = sitk.ReadImage(str(mask_path))
+    return {
+        'origin': mask.GetOrigin(),
+        'spacing': mask.GetSpacing(),
+        'direction': mask.GetDirection()
+    }
+
+
 def mask_to_3d_boxes(mask_array):
     """
     从3D掩码计算3D边界框
@@ -370,31 +412,40 @@ def match_predictions_with_labels(predictions_with_details, ground_truths_3d, pa
     return results_df
 
 
-def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_threshold=0.01, min_confidence=None):
+def process_fold_predictions(fold=0, save_path="/workspace/all_results/resutls_froc", iou_threshold=0.01, min_confidence=None, gt_csv_path=None):
     """
     处理指定折的预测结果，使用3D边界框计算FROC曲线
-    
+
     Args:
-        fold: 折数  
+        fold: 折数
         save_path: 结果保存路径
+        gt_csv_path: GT_bboxes.csv路径，如果提供则直接从CSV读取GT框（跳过掩码CC3D分析）
     """
     # 读取预测结果
-    pred_csv_path = f"/workspace/predictions_by_fold/249_neg_0/predictions_fold_{fold}.csv"
+    pred_csv_path = f"/workspace/all_results/predictions_by_fold/249_neg_0/predictions_fold_{fold}.csv"
     if not os.path.exists(pred_csv_path):
         print(f"预测结果文件不存在: {pred_csv_path}")
         return
-    
+
     pred_df = pd.read_csv(pred_csv_path)
     print(f"读取到 {len(pred_df)} 条预测结果")
-    
+
+    # 如果提供了GT CSV，直接从CSV加载GT框
+    gt_boxes_by_patient = None
+    if gt_csv_path is not None and os.path.exists(gt_csv_path):
+        print(f"从CSV加载GT框: {gt_csv_path}")
+        gt_boxes_by_patient = load_gt_boxes_from_csv(gt_csv_path, fold=fold)
+        print(f"从CSV加载了 {sum(len(v) for v in gt_boxes_by_patient.values())} 个GT框，涉及 {len(gt_boxes_by_patient)} 个患者")
+
     # 按患者和路径分组处理
     grouped = pred_df.groupby(['patient_key', 'path'])
     print(f"共有 {len(grouped)} 个数据样本")
-    
+
     all_predictions_with_details = []  # 包含详细信息的预测列表
     all_ground_truths_3d = []  # 存储所有3D ground truth
     unique_patients = set()  # 用于统计病例数
     processed_masks = set()  # 避免重复处理相同的掩码
+    mask_metadata_cache = {}  # 缓存掩码元数据
 
     for (patient, image_path), group in grouped:
         print(f"处理患者: {patient}")
@@ -419,21 +470,29 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
             print(f"掩码文件不存在: {mask_path}")
             continue
 
-        # 只有当掩码未被处理过时才处理它
-        if str(mask_path) not in processed_masks:
-            # 加载掩码
-            mask_array, mask_info = load_mask(str(mask_path))
+        # 获取掩码元数据（用于坐标转换），缓存避免重复读取
+        mask_path_str = str(mask_path)
+        if mask_path_str not in mask_metadata_cache:
+            mask_metadata_cache[mask_path_str] = get_mask_metadata(mask_path_str)
+        mask_info = mask_metadata_cache[mask_path_str]
 
-            # 将掩码转换为3D边界框
-            gt_boxes_3d = mask_to_3d_boxes(mask_array)
-
-            # 收集3D ground truth
-            all_ground_truths_3d.extend(gt_boxes_3d)
-            processed_masks.add(str(mask_path))
+        # GT框来源：优先使用CSV，否则从掩码CC3D分析
+        if gt_boxes_by_patient is not None:
+            # 从CSV获取该患者的GT框
+            if patient in gt_boxes_by_patient and mask_path_str not in processed_masks:
+                all_ground_truths_3d.extend(gt_boxes_by_patient[patient])
+                processed_masks.add(mask_path_str)
+        else:
+            # 回退：从掩码CC3D分析获取GT框
+            if mask_path_str not in processed_masks:
+                mask_array, mask_info = load_mask(str(mask_path))
+                gt_boxes_3d = mask_to_3d_boxes(mask_array)
+                all_ground_truths_3d.extend(gt_boxes_3d)
+                processed_masks.add(mask_path_str)
 
         # 收集预测结果（带详细信息）
         for idx, row in group.iterrows():
-            score = row['userAnnotComment.annotation']
+            score = row['detector_score']
 
             # 计算边界框的像素坐标
             min_x = row['roi_patientPos_min_x']
@@ -480,10 +539,11 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
     results_df = match_predictions_with_labels(
         all_predictions_with_details, all_ground_truths_3d, patient_count, iou_threshold, min_confidence
     )
-
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
     # 保存带有TP/FP标签的结果
     if not results_df.empty:
-        results_output_path = f"{save_path}/predictions_with_labels_fold_{fold}.csv"
+        results_output_path = f"{save_path}/Prediction_TP_FP_fold_{fold}.csv"
         results_df.to_csv(results_output_path, index=False)
         print(f"带有TP/FP标签的预测结果已保存到 {results_output_path}")
         print(f"TP数量: {(results_df['prediction_type'] == 'TP').sum()}")
@@ -519,7 +579,7 @@ def process_fold_predictions(fold=0, save_path="/workspace/resutls_froc", iou_th
 
 
 if __name__ == "__main__":
-    save_path = "/workspace/results_froc/249_neg_0"
-    # 处理第0折的预测结果
+    save_path = "/workspace/all_results/results_froc/249_neg_0_260520"
+    # 处理第1折的预测结果
     # 设置min_confidence过滤低置信度预测，例如0.5
-    process_fold_predictions(fold=4, save_path=save_path, iou_threshold=0.01, min_confidence=0.7037)
+    process_fold_predictions(fold=4, save_path=save_path, iou_threshold=0.001, min_confidence=None)

@@ -5,6 +5,55 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"eval_classifier.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "3D_resnet_class.eval_classifier",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"train_classifier.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "3D_resnet_class.train_classifier",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"build_patient_key_mapping.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "Get_3D_Class_Data.build_patient_key_mapping",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"categorize_confidence.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "Get_3D_Class_Data.categorize_confidence",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"vis_patch.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "Get_3D_Class_Data.vis_patch",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"extract_mask_bboxes.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "Get_3D_Class_Data.extract_mask_bboxes",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"extract_patches.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "Get_3D_Class_Data.extract_patches",
+            "console": "integratedTerminal"
+        },
+        {
             "name":"get_rotate_dicom.py",
             "type": "debugpy",
             "request": "launch",
@@ -51,6 +100,13 @@
             "type": "debugpy",
             "request": "launch",
             "program": "calculate_froc_and_get_FP_point.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"calculate_froc_patient.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "calculate_froc_patient.py",
             "console": "integratedTerminal"
         },
         {

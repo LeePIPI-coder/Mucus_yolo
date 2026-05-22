@@ -17,7 +17,7 @@
             ---...
             ---...
 2.使用extract_nifti_paths.py来提取目录中的文件名,并将这些文件名放入到csv文件中
-3.利用make_patch_dataset.py来将图片和标签进行分patch,最终将图片resize成[512,512,3](yxc)的图像,对应的mask标签数据为[1,512,512],并将总的数据分成train,valid,test
+3.利用make_patch_dataset.py来将图片和标签进行分patch，变成小图[128,128,64],最终将图片resize成[512,512,3](yxc)的图像,对应的mask标签数据为[1,512,512],并将总的数据分成train,valid,test
 4.使用mask_text.py将patch图像对应的mask标签转换为txt文件(目标检测的标注)
 5.使用make_kfold_yolo.py来将数据集划分成5折,每次训练使用其中一折
 6.将划分的5折数据创建对应的yaml文件

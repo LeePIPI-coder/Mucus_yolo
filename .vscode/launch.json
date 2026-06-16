@@ -5,6 +5,41 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"slice_13_planes.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "slice_13_planes.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"merge_lung_masks.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "merge_lung_masks.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"test_niigz.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "test_niigz.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"replace_vessel_values.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "replace_vessel_values.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name":"copy_matched_niigz.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "copy_matched_niigz.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name":"eval_classifier.py",
             "type": "debugpy",
             "request": "launch",

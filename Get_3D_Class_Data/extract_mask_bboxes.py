@@ -4,9 +4,10 @@ For each mask file, use connected component analysis to find individual mucus pl
 compute their 3D bounding boxes in both voxel and world (patient) coordinates,
 and save results to a CSV. Each plug (connected component) gets its own row
 with plug_id and the total plug_count for that patient.
-最终还会保存每个粘液栓中心所在的CT切片图像（PNG格式），在图像上标记中心点位置，供后续检查和可视化使用。
+
+Also saves a PNG image of the CT slice at each plug's center z-position,
+with the center point marked, for inspection and visualization.
 """
-## 提取标签的3D边界框（中心点坐标和尺寸），使用连通域分析识别独立的粘液栓
 import numpy as np
 import nibabel as nib
 import pandas as pd

@@ -23,7 +23,7 @@ all_results/
 3D_resnet_class/eval_results/
 3D_resnet_class/train_results/
 3D_resnet_class/MedicalNet_res_weight/
-
+data/
 
 # 忽略模型权重文件
 Mucus/

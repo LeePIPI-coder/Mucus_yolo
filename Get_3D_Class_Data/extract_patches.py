@@ -216,7 +216,7 @@ def process_folds(
             fp_per_scan = pd.DataFrame(columns=fp_clean.columns)
 
         n_fp_target = int(len(tp) / gt_fp_ratio)
-        print(f"  Per-scan cap: {per_scan_cap} (高{n_high_cap}/中{n_mid_cap}/低{n_low_cap}), "
+        print(f"  Per-scan cap: {per_scan_cap} (High={n_high_cap}/Mid={n_mid_cap}/Low={n_low_cap}), "
               f"scans with FPs: {len(fp_scan_groups)}")
         print(f"  FP after per-scan cap: {len(fp_per_scan)}, fold target: {n_fp_target} "
               f"(GT:FP = 1:{int(1/gt_fp_ratio)})")
@@ -349,7 +349,7 @@ def process_folds(
                     if patch is None: 
                         continue
 
-                    # # HU窗口化 + 归一化到0-255（匹配第一阶段: -1000~400）
+                    # HU windowing + normalize to 0-255 (match stage 1: -1000~400)
                     if not dry_run:
                         np.clip(patch, hu_min, hu_max, out=patch)
                         patch = ((patch - hu_min) / (hu_max - hu_min) * 255).astype(np.uint8)
@@ -413,23 +413,23 @@ def process_folds(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract 3D CT patches for 2nd-stage classification")
-    parser.add_argument("--data_dir", default="/workspace/Get_3D_Class_Data/分类数据集制作所需数据集表") # 数据CSV路径，包含Prediction_TP_FP_fold_x.csv文件
-    parser.add_argument("--nifti_root", default="/data/nifti_files") # nifti数据根目录
-    parser.add_argument("--output_dir", default="/data/Class_3D_patch/jitter_4")  # 3D patch输出路径
+    parser.add_argument("--data_dir", default="/workspace/Get_3D_Class_Data/分类数据集制作所需数据集表")  # Data CSV path with Prediction_TP_FP_fold_x.csv files
+    parser.add_argument("--nifti_root", default="/data/nifti_files")  # Nifti data root directory
+    parser.add_argument("--output_dir", default="/data/Class_3D_patch/jitter_4")  # 3D patch output path
     parser.add_argument("--gt_fp_ratio", type=float, default=0.5,
-                        help="GT:FP ratio (0.5 = 1:2, 1.0 = 1:1)")  # 正负样本的比例，0.5表示GT:FP=1:2，1.0表示GT:FP=1:1
+                        help="GT:FP ratio (0.5 = 1:2, 1.0 = 1:1)")  # Positive/negative sample ratio: 0.5 = GT:FP = 1:2, 1.0 = 1:1
     parser.add_argument("--per_scan_cap", type=int, default=100,
-                        help="Max FPs per scan (hard-negative mining cap)")  # 每个scan最多取多少个FP，用于难负样本挖掘的上限
+                        help="Max FPs per scan (hard-negative mining cap)")  # Max FPs per scan for hard-negative mining
     parser.add_argument("--n_jitter", type=int, default=4,
-                        help="Number of jittered copies per GT") # 对于每个GT样本，生成多少个带随机偏移的增强样本。FP不进行jitter。
+                        help="Number of jittered copies per GT")  # Number of randomly shifted augmentations per GT sample. FPs are not jittered.
     parser.add_argument("--jitter_range", type=float, default=4.0,
-                        help="Max jitter offset in resampled voxels (±4 ≈ ±1.6mm in x/y, ±3.2mm in z)") # 每个GT样本的随机偏移范围，单位是重采样后的体素。默认±4个体素，约等于±1.6mm在x/y轴，±3.2mm在z轴。
-    parser.add_argument("--patch_size", nargs=3, type=int, default=[64, 64, 32]) # 输出patch的尺寸，单位是重采样后的体素。默认64x64x32。
-    parser.add_argument("--target_spacing", nargs=3, type=float, default=[0.4, 0.4, 0.8]) # 重采样的目标空间分辨率，单位是mm。默认0.4mm x 0.4mm x 0.8mm。
-    parser.add_argument("--hu_min", type=float, default=-1000.0) # HU窗口的最小值，默认-1000（空气）。提取的patch会被裁剪到这个范围，并线性归一化到0-255。
-    parser.add_argument("--hu_max", type=float, default=400.0) # HU窗口的最大值，默认400（软组织）。提取的patch会被裁剪到这个范围，并线性归一化到0-255。
+                        help="Max jitter offset in resampled voxels (±4 ≈ ±1.6mm in x/y, ±3.2mm in z)")  # Random offset range per GT sample in resampled voxels. Default ±4 vox ≈ ±1.6mm (x/y), ±3.2mm (z).
+    parser.add_argument("--patch_size", nargs=3, type=int, default=[64, 64, 32])  # Output patch size in resampled voxels. Default 64x64x32.
+    parser.add_argument("--target_spacing", nargs=3, type=float, default=[0.4, 0.4, 0.8])  # Target spatial resolution in mm. Default 0.4x0.4x0.8 mm.
+    parser.add_argument("--hu_min", type=float, default=-1000.0)  # HU window minimum (air). Patch is clipped to this range and linearly normalized to 0-255.
+    parser.add_argument("--hu_max", type=float, default=400.0)  # HU window maximum (soft tissue). Patch is clipped to this range and linearly normalized to 0-255.
     parser.add_argument("--dry_run", action="store_true",
-                        help="Skip actual patch extraction, just simulate") # 如果设置了--dry_run，则不进行实际的patch提取和保存，只模拟流程并输出统计信息。这对于调试和验证流程非常有用。
+                        help="Skip actual patch extraction, just simulate")  # If set, simulate the pipeline without extracting patches — useful for debugging and validation.
     args = parser.parse_args()
 
     process_folds(

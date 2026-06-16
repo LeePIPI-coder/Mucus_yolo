@@ -1,9 +1,9 @@
 from ultralytics import YOLO
 
 if __name__ == "__main__":
-# ---------进行交叉验证时，微调更改data、project、name参数-----------
+# --------- For cross-validation, adjust data/project/name parameters -----------
     for i in range(5):
-        print(f"正在训练第{i}折数据")
+        print(f"Training fold {i}")
         model = YOLO("/workspace/yolo11n.pt")
         train_results = model.train(
             data=f"/data/yolo_dataset_249/Kfold_neg_0.1/fold{i}.yaml",  # Path to dataset configuration file
@@ -21,7 +21,7 @@ if __name__ == "__main__":
             save_period=10,
             workers=4,
             device=0,  # Device to run on (e.g., 'cpu', 0, [0,1,2,3])
-            # cache='ram', # 是否启用内存中缓存数据集图像
+            # cache='ram',  # Enable in-memory caching of dataset images
             project="Train_result/Mucus_249_neg_0.1",
             name=f"Train_fold{i}",
             # resume=Trues

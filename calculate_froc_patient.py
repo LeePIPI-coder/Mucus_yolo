@@ -13,14 +13,14 @@ from scipy.spatial.distance import cdist
 
 def load_mask(mask_path):
     """
-    加载nii.gz格式的掩码文件
-    
+    Load a nii.gz mask file.
+
     Args:
-        mask_path: 掩码文件路径
-    
+        mask_path: Path to the mask file
+
     Returns:
-        mask_array: 掩码的numpy数组
-        info: 掩码的元数据信息
+        mask_array: Mask as numpy array
+        info: Mask metadata dictionary
     """
     mask = sitk.ReadImage(mask_path)
     mask_array = sitk.GetArrayFromImage(mask)
@@ -34,10 +34,11 @@ def load_mask(mask_path):
 
 def load_gt_boxes_from_csv(csv_path, fold=None):
     """
-    从GT_bboxes.csv直接读取GT边界框（体素坐标），跳过掩码加载和CC3D分析。
+    Read GT bounding boxes (voxel coordinates) directly from a CSV,
+    skipping mask loading and CC3D analysis.
 
-    CSV列: voxel_center_i(宽度/x), voxel_center_j(高度/y), voxel_center_k(深度/z),
-           voxel_dim_i, voxel_dim_j, voxel_dim_k
+    CSV columns: voxel_center_i (width/x), voxel_center_j (height/y), voxel_center_k (depth/z),
+                 voxel_dim_i, voxel_dim_j, voxel_dim_k
 
     Returns:
         gt_boxes_dict: {patient_key: [[z_min, y_min, x_min, z_max, y_max, x_max], ...]}
@@ -65,7 +66,7 @@ def load_gt_boxes_from_csv(csv_path, fold=None):
 
 
 def get_mask_metadata(mask_path):
-    """只加载掩码文件的元数据（原点、间距、方向），不读取像素数据。"""
+    """Load only the metadata (origin, spacing, direction) of a mask file, without pixel data."""
     mask = sitk.ReadImage(str(mask_path))
     return {
         'origin': mask.GetOrigin(),
@@ -76,39 +77,39 @@ def get_mask_metadata(mask_path):
 
 def mask_to_3d_boxes(mask_array):
     """
-    从3D掩码计算3D边界框
-    
+    Compute 3D bounding boxes from a 3D mask.
+
     Args:
-        mask_array: 3D掩码数组 (depth, height, width)
-    
+        mask_array: 3D mask array (depth, height, width)
+
     Returns:
-        boxes_3d: 3D边界框列表 [(z_min, y_min, x_min, z_max, y_max, x_max)]
+        boxes_3d: List of 3D bounding boxes [(z_min, y_min, x_min, z_max, y_max, x_max)]
     """
-    # 将掩码转换为二值图像
+    # Binarize the mask
     binary_mask = (mask_array > 0).astype(np.uint8)
-    
-    # 连通组件标记
-    labels_out = cc3d.connected_components(binary_mask, connectivity=26)  # 3D连通性
+
+    # Connected components labeling
+    labels_out = cc3d.connected_components(binary_mask, connectivity=26)  # 3D connectivity
     num_objects = labels_out.max()
-    
+
     boxes_3d = []
-    
+
     if num_objects == 0:
         return boxes_3d
-    
+
     for obj_label in range(1, num_objects + 1):
         obj_mask = (labels_out == obj_label).astype(np.uint8)
-        
-        # 获取对象的非零坐标
+
+        # Get non-zero coordinates of the object
         coords = np.where(obj_mask)
-        if len(coords[0]) == 0:  # 如果没有找到非零元素
+        if len(coords[0]) == 0:  # Skip if no non-zero elements found
             continue
-        
+
         z_min, z_max = coords[0].min(), coords[0].max()
         y_min, y_max = coords[1].min(), coords[1].max()
         x_min, x_max = coords[2].min(), coords[2].max()
-        
-        # 添加一些边距
+
+        # Add a margin around the bounding box
         margin = 5
         z_min = max(z_min - margin, 0)
         y_min = max(y_min - margin, 0)
@@ -116,87 +117,87 @@ def mask_to_3d_boxes(mask_array):
         z_max = min(z_max + margin, mask_array.shape[0] - 1)
         y_max = min(y_max + margin, mask_array.shape[1] - 1)
         x_max = min(x_max + margin, mask_array.shape[2] - 1)
-        
+
         boxes_3d.append((z_min, y_min, x_min, z_max, y_max, x_max))
-    
+
     return boxes_3d
 
 
 def calculate_3d_iou(box1, box2):
     """
-    计算两个3D边界框的IoU
-    
+    Calculate 3D IoU for two bounding boxes.
+
     Args:
-        box1: 第一个3D边界框 [z1_min, y1_min, x1_min, z1_max, y1_max, x1_max]
-        box2: 第二个3D边界框 [z2_min, y2_min, x2_min, z2_max, y2_max, x2_max]
-    
+        box1: First 3D box [z1_min, y1_min, x1_min, z1_max, y1_max, x1_max]
+        box2: Second 3D box [z2_min, y2_min, x2_min, z2_max, y2_max, x2_max]
+
     Returns:
-        iou: 3D交并比
+        iou: 3D intersection over union
     """
     z1_min, y1_min, x1_min, z1_max, y1_max, x1_max = box1
     z2_min, y2_min, x2_min, z2_max, y2_max, x2_max = box2
-    
-    # 计算交集的边界
+
+    # Compute intersection bounds
     zi_min = max(z1_min, z2_min)
     yi_min = max(y1_min, y2_min)
     xi_min = max(x1_min, x2_min)
     zi_max = min(z1_max, z2_max)
     yi_max = min(y1_max, y2_max)
     xi_max = min(x1_max, x2_max)
-    
-    # 计算交集体积
+
+    # Compute intersection volume
     inter_depth = max(0, zi_max - zi_min)
     inter_height = max(0, yi_max - yi_min)
     inter_width = max(0, xi_max - xi_min)
     inter_volume = inter_depth * inter_height * inter_width
-    
-    # 计算各自体积
+
+    # Compute individual volumes
     vol1 = (z1_max - z1_min) * (y1_max - y1_min) * (x1_max - x1_min)
     vol2 = (z2_max - z2_min) * (y2_max - y2_min) * (x2_max - x2_min)
-    
-    # 计算并集体积
+
+    # Compute union volume
     union_volume = vol1 + vol2 - inter_volume
-    
+
     return inter_volume / union_volume if union_volume > 0 else 0
 
 
 def calculate_froc_3d(predictions, ground_truths_dict, patient_count, iou_threshold):
     """
-    使用3D边界框计算FROC曲线（按患者隔离IoU匹配）
+    Compute FROC curve using 3D bounding boxes with per-patient IoU matching.
 
     Args:
-        predictions: 预测结果列表，每个元素为 (score, pred_box, patient_key, [optional row])
+        predictions: List of (score, pred_box, patient_key, [optional row])
         ground_truths_dict: {patient_key: [[z_min, y_min, x_min, z_max, y_max, x_max], ...]}
-        patient_count: 病例总数
-        iou_threshold: 3D IoU阈值
+        patient_count: Total number of patients
+        iou_threshold: 3D IoU threshold
 
     Returns:
-        fps: 假阳性率
-        sensitivities: 灵敏度
-        thresholds: 对应的置信度阈值
+        fps: False positive rates (avg per patient)
+        sensitivities: Sensitivity values
+        thresholds: Corresponding confidence thresholds
     """
-    # 按置信度排序预测结果
+    # Sort predictions by confidence score
     predictions.sort(key=lambda x: x[0], reverse=True)
 
-    # 计算ground truth总数
+    # Count total ground truths
     total_gt = sum(len(boxes) for boxes in ground_truths_dict.values())
     if total_gt == 0:
         return [], [], []
 
-    # 按患者跟踪每个ground truth是否被检测到
+    # Track which GTs have been detected per patient
     detected = {patient: [False] * len(boxes) for patient, boxes in ground_truths_dict.items()}
 
-    # 计算每个阈值下的TP和FP
+    # Compute TP and FP at each threshold
     tp = 0
     fp = 0
     fps = []
     sensitivities = []
-    thresholds = []  # 记录每个点的阈值
+    thresholds = []  # Record threshold at each point
 
     for pred in predictions:
         score, pred_box, patient_key = pred[0], pred[1], pred[2]
 
-        # 只在同一患者的GT中做IoU匹配
+        # Match IoU only against GTs of the same patient
         max_iou = 0
         best_gt_idx = -1
         patient_gts = ground_truths_dict.get(patient_key, [])
@@ -209,108 +210,101 @@ def calculate_froc_3d(predictions, ground_truths_dict, patient_count, iou_thresh
                     best_gt_idx = i
 
         if max_iou >= iou_threshold:
-            # 真正例
+            # True positive
             tp += 1
             detected[patient_key][best_gt_idx] = True
         else:
-            # 假正例
+            # False positive
             fp += 1
 
-        # 计算灵敏度和假阳性率
+        # Compute sensitivity and false positive rate
         sensitivity = tp / total_gt
-        avg_fp_per_patient = fp / patient_count  # 平均每个病例的假阳性数
+        avg_fp_per_patient = fp / patient_count  # Average false positives per patient
 
         fps.append(avg_fp_per_patient)
         sensitivities.append(sensitivity)
-        thresholds.append(score)  # 当前使用的置信度阈值
+        thresholds.append(score)  # Confidence threshold at this point
 
     return fps, sensitivities, thresholds
 
 
 def plot_froc_curve(fps, sensitivities, fold=0, save_path="/workspace/resutls_froc"):
     """
-    绘制FROC曲线
-    
+    Plot FROC curve.
+
     Args:
-        fps: 假阳性率列表
-        sensitivities: 灵敏度列表
-        fold: 折数
-        save_path: 保存路径，默认"/workspace/resutls_froc"
+        fps: List of false positive rates
+        sensitivities: List of sensitivity values
+        fold: Fold number
+        save_path: Save directory, default "/workspace/resutls_froc"
     """
     if not fps or not sensitivities:
-        print("没有FROC数据可绘制")
+        print("No FROC data to plot")
         return
-    
-    # 创建图形
+
     plt.figure(figsize=(10, 8))
-    
-    # 绘制FROC曲线
+
+    # Plot FROC curve
     plt.plot(fps, sensitivities, 'b-', linewidth=2, label='FROC Curve')
-    
-    # 添加标题和标签
+
     plt.title(f'FROC Curve - Fold {fold}', fontsize=16)
     plt.xlabel('Average Number of False Positives Per Patient', fontsize=14)
     plt.ylabel('Sensitivity', fontsize=14)
-    
-    # 添加网格
+
     plt.grid(True, linestyle='--', alpha=0.6)
-    
-    # 设置坐标轴范围
+
     plt.xlim(0, max(fps) if fps else 1)
     plt.ylim(0, 1)
-    
-    # 添加图例
+
     plt.legend(fontsize=12)
-    
-    # 保存图片
+
+    # Save figure
     plot_path = f"{save_path}/froc_curve_fold_{fold}.png"
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    print(f"FROC曲线图已保存到 {plot_path}")
-    
-    # 显示图表
+    print(f"FROC curve saved to {plot_path}")
+
     plt.show()
 
 
 def find_sensitivity_at_target_fp(fps, sensitivities, thresholds, target_fp_per_patient):
     """
-    计算平均每个病例出现目标FP数时对应的sensitivity和置信度阈值
-    
+    Find the sensitivity and confidence threshold at a target FP-per-patient count.
+
     Args:
-        fps: 假阳性率列表 (平均每个病例的FP数)
-        sensitivities: 灵敏度列表
-        thresholds: 对应的置信度阈值列表
-        target_fp_per_patient: 目标平均每个病例的FP数
-    
+        fps: List of false positive rates (avg FPs per patient)
+        sensitivities: List of sensitivity values
+        thresholds: Corresponding confidence threshold list
+        target_fp_per_patient: Target average FPs per patient
+
     Returns:
-        sensitivity_at_target_fp: 目标FP数下的sensitivity
-        threshold_at_target_fp: 目标FP数下的置信度阈值
+        sensitivity_at_target_fp: Sensitivity at the target FP count
+        threshold_at_target_fp: Confidence threshold at the target FP count
     """
     if not fps:
         return 0, 0
 
-    # 查找最接近目标FP数的点
-    # 在FROC计算中，fps是累积的FP数除以病人数，所以我们要找到最接近目标值的点
+    # Find the point closest to the target FP count
     diffs = [abs(fp - target_fp_per_patient) for fp in fps]
     closest_idx = diffs.index(min(diffs))
-    
+
     sensitivity_at_target_fp = sensitivities[closest_idx]
     threshold_at_target_fp = thresholds[closest_idx] if closest_idx < len(thresholds) else 0
-    
+
     return sensitivity_at_target_fp, threshold_at_target_fp
 
 
 def coord_pat2vox(pat, origin, spacing, direction):
     """
-    将世界坐标转换为像素坐标
-    
+    Convert world (patient) coordinates to voxel coordinates.
+
     Args:
-        pat: 世界坐标 [x, y, z]
-        origin: 图像原点
-        spacing: 像素间距
-        direction: 方向矩阵
-    
+        pat: World coordinates [x, y, z]
+        origin: Image origin
+        spacing: Voxel spacing
+        direction: Direction matrix
+
     Returns:
-        voxel_coord: 像素坐标 (x, y, z)
+        voxel_coord: Voxel coordinates (x, y, z)
     """
     origin = np.array(origin)
     spacing = np.array(spacing)
@@ -324,25 +318,26 @@ def coord_pat2vox(pat, origin, spacing, direction):
 
 def match_predictions_with_labels(predictions_with_details, ground_truths_dict, patient_count, iou_threshold=0.01, min_confidence=None):
     """
-    将预测结果与标签进行匹配，创建带有TP/FP标签的新表格（按患者隔离IoU匹配）
+    Match predictions with ground truth labels and create a new table with TP/FP labels
+    (per-patient IoU matching).
 
     Args:
-        predictions_with_details: 预测结果列表，每个元素为 (score, pred_box, patient_key, original_row_data)
+        predictions_with_details: List of (score, pred_box, patient_key, original_row_data)
         ground_truths_dict: {patient_key: [[z_min, y_min, x_min, z_max, y_max, x_max], ...]}
-        patient_count: 病例总数
-        iou_threshold: 3D IoU阈值
-        min_confidence: 最小置信度阈值，低于此值的预测将被跳过
+        patient_count: Total number of patients
+        iou_threshold: 3D IoU threshold
+        min_confidence: Minimum confidence threshold — predictions below this are skipped
 
     Returns:
-        results_df: 包含预测信息和TP/FP标签的DataFrame
+        results_df: DataFrame with prediction info and TP/FP labels
     """
     if not predictions_with_details:
         return pd.DataFrame()
 
-    # 按置信度排序预测结果
+    # Sort predictions by confidence
     predictions_sorted = sorted(predictions_with_details, key=lambda x: x[0], reverse=True)
 
-    # 按患者跟踪每个ground truth是否被检测到
+    # Track which GTs have been detected per patient
     detected = {patient: [False] * len(boxes) for patient, boxes in ground_truths_dict.items()}
 
     results = []
@@ -350,11 +345,11 @@ def match_predictions_with_labels(predictions_with_details, ground_truths_dict, 
     for pred in predictions_sorted:
         score, pred_box, patient_key, original_row = pred
 
-        # 跳过低于最小置信度阈值的预测
+        # Skip predictions below the minimum confidence threshold
         if min_confidence is not None and score < min_confidence:
             continue
 
-        # 只在同一患者的GT中做IoU匹配
+        # Match IoU only against GTs of the same patient
         max_iou = 0
         best_gt_idx = -1
         patient_gts = ground_truths_dict.get(patient_key, [])
@@ -367,17 +362,17 @@ def match_predictions_with_labels(predictions_with_details, ground_truths_dict, 
                     best_gt_idx = i
 
         if max_iou >= iou_threshold:
-            # 真正例
+            # True positive
             label = "TP"
             detected[patient_key][best_gt_idx] = True
         else:
-            # 假正例
+            # False positive
             label = "FP"
 
-        # 将原始行数据转换为字典
+        # Convert original row data to dict
         row_dict = original_row.to_dict() if hasattr(original_row, 'to_dict') else dict(original_row)
 
-        # 添加预测框的像素坐标信息
+        # Add pixel coordinate info for the predicted box
         z_min, y_min, x_min, z_max, y_max, x_max = pred_box
         row_dict['pixel_x_min'] = x_min
         row_dict['pixel_y_min'] = y_min
@@ -392,7 +387,7 @@ def match_predictions_with_labels(predictions_with_details, ground_truths_dict, 
         row_dict['pixel_height'] = y_max - y_min
         row_dict['pixel_depth'] = z_max - z_min
 
-        # 添加IoU值和标签
+        # Add IoU value and label
         row_dict['iou'] = max_iou
         row_dict['prediction_type'] = label
 
@@ -400,7 +395,7 @@ def match_predictions_with_labels(predictions_with_details, ground_truths_dict, 
 
     results_df = pd.DataFrame(results)
 
-    # 调整列顺序，将prediction_type放在最后
+    # Reorder columns: put prediction_type at the end
     if not results_df.empty:
         cols = [col for col in results_df.columns if col != 'prediction_type'] + ['prediction_type']
         results_df = results_df[cols]
@@ -410,46 +405,49 @@ def match_predictions_with_labels(predictions_with_details, ground_truths_dict, 
 
 def process_fold_predictions(fold=0, pred_csv_path=None, save_path="/workspace/all_results/results_froc", iou_threshold=0.001, min_confidence=None, gt_csv_path=None):
     """
-    处理指定折的预测结果，使用3D边界框计算FROC曲线
+    Process predictions for a given fold and compute FROC curve using 3D bounding boxes.
 
     Args:
-        fold: 折数
-        save_path: 结果保存路径
-        gt_csv_path: GT_bboxes.csv路径，如果提供则直接从CSV读取GT框（跳过掩码CC3D分析）
+        fold: Fold number
+        pred_csv_path: Path to prediction CSV
+        save_path: Output directory for results
+        iou_threshold: 3D IoU threshold for TP matching
+        min_confidence: Minimum confidence threshold (predictions below this are skipped)
+        gt_csv_path: Path to GT_bboxes.csv — if provided, load GT boxes from CSV
+                     instead of CC3D mask analysis
     """
-    # 读取预测结果
+    # Read predictions
     if not os.path.exists(pred_csv_path):
-        print(f"预测结果文件不存在: {pred_csv_path}")
+        print(f"Prediction file not found: {pred_csv_path}")
         return
 
     pred_df = pd.read_csv(pred_csv_path)
-    print(f"读取到 {len(pred_df)} 条预测结果")
+    print(f"Loaded {len(pred_df)} predictions")
 
-    # 如果提供了GT CSV，直接从CSV加载GT框
+    # If GT CSV is provided, load GT boxes directly
     gt_boxes_by_patient = None
     if gt_csv_path is not None and os.path.exists(gt_csv_path):
-        print(f"从CSV加载GT框: {gt_csv_path}")
+        print(f"Loading GT boxes from CSV: {gt_csv_path}")
         gt_boxes_by_patient = load_gt_boxes_from_csv(gt_csv_path, fold=fold)
-        print(f"从CSV加载了 {sum(len(v) for v in gt_boxes_by_patient.values())} 个GT框，涉及 {len(gt_boxes_by_patient)} 个患者")
+        print(f"Loaded {sum(len(v) for v in gt_boxes_by_patient.values())} GT boxes across {len(gt_boxes_by_patient)} patients")
 
-    # 按患者和路径分组处理
+    # Group by patient and path
     grouped = pred_df.groupby(['patient_key', 'path'])
-    print(f"共有 {len(grouped)} 个数据样本")
+    print(f"Total {len(grouped)} data samples")
 
-    all_predictions_with_details = []  # 包含详细信息的预测列表
+    all_predictions_with_details = []  # Predictions with detailed info
     all_ground_truths_dict = defaultdict(list)  # {patient_key: [3D ground truth boxes]}
-    unique_patients = set()  # 用于统计病例数
-    processed_masks = set()  # 避免重复处理相同的掩码
-    mask_metadata_cache = {}  # 缓存掩码元数据
-    
-    for (patient, image_path), group in grouped:
-        print(f"处理患者: {patient}")
-        print(f"图像路径: {image_path}")
+    unique_patients = set()  # For counting patients
+    processed_masks = set()  # Avoid re-processing the same mask
+    mask_metadata_cache = {}  # Cache mask metadata
 
-        # 添加到唯一病例集合
+    for (patient, image_path), group in grouped:
+        print(f"Processing patient: {patient}")
+        print(f"Image path: {image_path}")
+
         unique_patients.add(patient)
 
-        # 根据图像路径找到掩码路径（将"image"替换为"mask"）
+        # Find mask path from image path (replace "image" with "mask")
         image_path = Path(image_path)
         if "DICOM" not in str(image_path):
             mask_dir = image_path.parent.parent
@@ -459,37 +457,35 @@ def process_fold_predictions(fold=0, pred_csv_path=None, save_path="/workspace/a
 
         mask_path = next(mask_dir.glob("*.nii.gz"), None)
 
-        print(f"掩码路径: {mask_path}")
+        print(f"Mask path: {mask_path}")
 
         if mask_path is None or not mask_path.exists():
-            print(f"掩码文件不存在: {mask_path}")
+            print(f"Mask file not found: {mask_path}")
             continue
 
-        # 获取掩码元数据（用于坐标转换），缓存避免重复读取
+        # Get mask metadata (for coordinate transform), cache to avoid re-reading
         mask_path_str = str(mask_path)
         if mask_path_str not in mask_metadata_cache:
             mask_metadata_cache[mask_path_str] = get_mask_metadata(mask_path_str)
         mask_info = mask_metadata_cache[mask_path_str]
 
-        # GT框来源：优先使用CSV，否则从掩码CC3D分析
+        # GT box source: prefer CSV, otherwise use mask CC3D analysis
         if gt_boxes_by_patient is not None:
-            # 从CSV获取该患者的GT框
             if patient in gt_boxes_by_patient and mask_path_str not in processed_masks:
                 all_ground_truths_dict[patient].extend(gt_boxes_by_patient[patient])
                 processed_masks.add(mask_path_str)
         else:
-            # 回退：从掩码CC3D分析获取GT框
+            # Fallback: CC3D analysis from mask
             if mask_path_str not in processed_masks:
                 mask_array, mask_info = load_mask(str(mask_path))
                 gt_boxes_3d = mask_to_3d_boxes(mask_array)
                 all_ground_truths_dict[patient].extend(gt_boxes_3d)
                 processed_masks.add(mask_path_str)
 
-        # 收集预测结果（带详细信息）
+        # Collect predictions with detailed info
         for idx, row in group.iterrows():
             score = row['detector_score']
 
-            # 计算边界框的像素坐标
             min_x = row['roi_patientPos_min_x']
             min_y = row['roi_patientPos_min_y']
             min_z = row['roi_patientPos_min_z']
@@ -497,7 +493,7 @@ def process_fold_predictions(fold=0, pred_csv_path=None, save_path="/workspace/a
             max_y = row['roi_patientPos_max_y']
             max_z = row['roi_patientPos_max_z']
 
-            # 将边界框坐标转换为像素坐标
+            # Convert bounding box corners to voxel coordinates
             min_vox = coord_pat2vox(
                 [min_x, min_y, min_z],
                 mask_info['origin'],
@@ -511,45 +507,45 @@ def process_fold_predictions(fold=0, pred_csv_path=None, save_path="/workspace/a
                 mask_info['direction']
             )
 
-            x1 = min_vox[0]  # x坐标
-            y1 = min_vox[1]  # y坐标
-            z1 = min_vox[2]  # z坐标
-            x2 = max_vox[0]  # x坐标
-            y2 = max_vox[1]  # y坐标
-            z2 = max_vox[2]  # z坐标
+            x1 = min_vox[0]  # x coordinate
+            y1 = min_vox[1]  # y coordinate
+            z1 = min_vox[2]  # z coordinate
+            x2 = max_vox[0]  # x coordinate
+            y2 = max_vox[1]  # y coordinate
+            z2 = max_vox[2]  # z coordinate
 
-            # 创建3D边界框 [z_min, y_min, x_min, z_max, y_max, x_max]
+            # Create 3D bounding box [z_min, y_min, x_min, z_max, y_max, x_max]
             pred_box = [z1, y1, x1, z2, y2, x2]
 
-            # 保存预测结果，包含原始行数据用于后续输出
+            # Save prediction with original row data for downstream use
             all_predictions_with_details.append((score, pred_box, patient, row))
 
-    # 计算病例数
+    # Compute patient count
     patient_count = len(unique_patients)
     total_gt = sum(len(v) for v in all_ground_truths_dict.values())
-    print(f"病例总数: {patient_count}")
-    print(f"3D Ground Truth 数量: {total_gt}")
-    print(f"预测数量: {len(all_predictions_with_details)}")
+    print(f"Total patients: {patient_count}")
+    print(f"3D Ground Truth count: {total_gt}")
+    print(f"Prediction count: {len(all_predictions_with_details)}")
 
-    # 创建带有TP/FP标签的结果表格
+    # Create result table with TP/FP labels
     results_df = match_predictions_with_labels(
         all_predictions_with_details, all_ground_truths_dict, patient_count, iou_threshold, min_confidence
     )
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    # 保存带有TP/FP标签的结果
+    # Save results with TP/FP labels
     if not results_df.empty:
         results_output_path = f"{save_path}/Prediction_TP_FP_fold_{fold}.csv"
         results_df.to_csv(results_output_path, index=False)
-        print(f"带有TP/FP标签的预测结果已保存到 {results_output_path}")
-        print(f"TP数量: {(results_df['prediction_type'] == 'TP').sum()}")
-        print(f"FP数量: {(results_df['prediction_type'] == 'FP').sum()}")
+        print(f"Results with TP/FP labels saved to {results_output_path}")
+        print(f"TP count: {(results_df['prediction_type'] == 'TP').sum()}")
+        print(f"FP count: {(results_df['prediction_type'] == 'FP').sum()}")
 
-    # 计算FROC曲线
+    # Compute FROC curve
     fps, sensitivities, thresholds = calculate_froc_3d(all_predictions_with_details, all_ground_truths_dict, patient_count, iou_threshold)
-    
-    # 保存结果
+
+    # Save results
     froc_df = pd.DataFrame({
         'fps': fps,
         'sensitivity': sensitivities,
@@ -558,28 +554,28 @@ def process_fold_predictions(fold=0, pred_csv_path=None, save_path="/workspace/a
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     froc_df.to_csv(f"{save_path}/froc_fold_{fold}.csv", index=False)
-    print(f"FROC曲线数据已保存到 {save_path}/froc_fold_{fold}.csv")
-    
-    # 绘制FROC曲线
+    print(f"FROC data saved to {save_path}/froc_fold_{fold}.csv")
+
+    # Plot FROC curve
     plot_froc_curve(fps, sensitivities, fold, save_path)
-    
-    # 计算平均每个病例出现100个FP时对应的置信度阈值和sensitivity
+
+    # Find sensitivity and confidence threshold at 100 FP/patient
     target_fp_per_patient = 100
     target_sensitivity, target_threshold = find_sensitivity_at_target_fp(fps, sensitivities, thresholds, target_fp_per_patient)
-    
-    # 打印结果
-    print("FROC曲线计算完成")
-    print(f"最大灵敏度: {max(sensitivities) if sensitivities else 0:.4f}")
-    print(f"对应的假阳性数: {fps[sensitivities.index(max(sensitivities))] if sensitivities else 0:.4f}")
-    print(f"平均每个病例出现{target_fp_per_patient}个FP时的灵敏度: {target_sensitivity:.4f}")
-    print(f"平均每个病例出现{target_fp_per_patient}个FP时的置信度阈值: {target_threshold:.4f}")
+
+    print("FROC calculation complete")
+    print(f"Max sensitivity: {max(sensitivities) if sensitivities else 0:.4f}")
+    print(f"FPs at max sensitivity: {fps[sensitivities.index(max(sensitivities))] if sensitivities else 0:.4f}")
+    print(f"Sensitivity at {target_fp_per_patient} FP/patient: {target_sensitivity:.4f}")
+    print(f"Confidence threshold at {target_fp_per_patient} FP/patient: {target_threshold:.4f}")
 
 
 if __name__ == "__main__":
-    # 在病人level计算FROC曲线，使用3D边界框进行IoU匹配，并保存带有TP/FP标签的结果表格
+    # Compute patient-level FROC curve using 3D bounding box IoU matching,
+    # and save the result table with TP/FP labels
     save_path = "/workspace/all_results/results_froc/249_neg_0_test_me"
     fold = 0
     pred_csv_path = f"/workspace/all_results/predictions_by_fold/249_neg_0/Prediction_fold_{fold}.csv"
-    # 处理第1折的预测结果
-    # 设置min_confidence过滤低置信度预测，例如0.5
+    # Process predictions for fold 0
+    # Set min_confidence to filter low-confidence predictions, e.g. 0.5
     process_fold_predictions(fold=fold, pred_csv_path=pred_csv_path, save_path=save_path, iou_threshold=0.001, min_confidence=None)

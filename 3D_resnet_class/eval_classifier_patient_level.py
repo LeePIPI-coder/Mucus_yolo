@@ -421,7 +421,7 @@ def compute_froc_metrics(df, score_col, mask_map, fold):
 def main():
     parser = argparse.ArgumentParser(
         description="Evaluate 2nd-stage classifier with FROC")
-    parser.add_argument("--patch_root", default="/workspace/Get_3D_Class_Data/一阶段预测数据") # 跟extract_patches.py的data_dir一致
+    parser.add_argument("--patch_root", default="/workspace/Get_3D_Class_Data/一阶段预测数据")  # Must match extract_patches.py's data_dir
     parser.add_argument("--nifti_root", default="/data/nifti_files")  # nifti数据根目录
     parser.add_argument("--fold", type=int, default=0,
                         help="Fold to evaluate (0-4)")
@@ -449,7 +449,7 @@ def main():
         fold=args.fold, 
         output_dir=args.output_dir,
         nifti_root=args.nifti_root,
-        data_dir=args.patch_root, # 该目录下有Prediction_TP_FP_fold_{fold}.csv文件
+        data_dir=args.patch_root,  # This directory contains Prediction_TP_FP_fold_{fold}.csv files
         device=device,
         batch_size=args.batch_size,
     )

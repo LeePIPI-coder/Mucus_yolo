@@ -416,15 +416,15 @@ def main():
     parser = argparse.ArgumentParser(
         description="Evaluate 2nd-stage classifier with FROC")
     parser.add_argument("--patch_root", default="/workspace/Get_3D_Class_Data/一阶段预测数据") # 跟extract_patches.py的data_dir一致
-    parser.add_argument("--nifti_root", default="/data/nifti_files")  # nifti数据根目录
+    parser.add_argument("--nifti_root", default="/data/nifti_sfiles")  # nifti数据根目录
     parser.add_argument("--fold", type=int, default=0,
                         help="Fold to evaluate (0-4)")
-    parser.add_argument("--model_path", default="/workspace/3D_resnet_class/experiments/A/re34_pretrain_neg_1/fold_0/best_model.pth",
+    parser.add_argument("--model_path", default="/workspace/3D_resnet_class/train_results/A/re34_pretrain_neg_1/fold_0/best_model.pth",
                         help="Path to trained best_model.pth")
     parser.add_argument("--backbone", default="resnet34",
                         choices=["resnet18", "resnet34"])
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--output_dir", default="/workspace/3D_resnet_class/eval_results/re34_pretrain_neg_1_260522")
+    parser.add_argument("--output_dir", default="/workspace/3D_resnet_class/eval_results/re34_pretrain_neg_1_260604")
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -31,4 +31,4 @@ for csv_file in sorted(data_dir.glob("Prediction_TP_FP_fold_*.csv")):
     n_high = (df["confidence_level"] == "高置信度").sum()
     n_mid = (df["confidence_level"] == "中置信度").sum()
     n_low = (df["confidence_level"] == "低置信度").sum()
-    print(f"{csv_file.name}: {len(df)} rows → 高{n_high} | 中{n_mid} | 低{n_low}")
+    print(f"{csv_file.name}: {len(df)} rows -> High={n_high} | Mid={n_mid} | Low={n_low}")
